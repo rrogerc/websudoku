@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Web Sudoku</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Play unlimited Sudoku puzzles. Four levels from Easy to Evil.">
+  <meta name="theme-color" content="#666699">
+  <link rel="icon" type="image/png" href="/icon-192.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+</head>
+<body>
+
+<table id="layout"><tbody><tr>
+  <td id="left-column" class="left-bordered">
+    <table class="col-table"><tbody>
+      <tr><td valign="top" align="center">
+        <div id="logo"><img src="/logo-240x240.png" width="120" height="120" alt="Web Sudoku"></div>
+        <p class="tm big level-links"></p>
+        <div class="blurb halfbig">
+          To complete the Sudoku puzzle, enter numbers into the spaces so that each row, column and 3×3 box contains the digits 1&nbsp;to&nbsp;9 without repeats.
+        </div>
+        <div class="blurb halfbig" style="margin-bottom:0;">
+          <b>Some tips for solving Sudoku:</b>
+          <ul>
+            <li>Avoid trial and error – find a logical reason for entering each number.</li>
+            <li>Look for rows, columns and 3×3 boxes with just a few blanks remaining.</li>
+            <li>Try adding numbers which already appear often in the Sudoku puzzle.</li>
+            <li>After entering a number, check to see where else it has to go.</li>
+            <li>For trickier puzzles, click Options to turn on pencil marks.</li>
+          </ul>
+        </div>
+        <table id="stats-table" class="tm"></table>
+      </td></tr>
+      <tr><td valign="bottom" align="center">
+        <p class="tm"><a href="https://www.websudoku.com/" target="_blank" rel="noreferrer">websudoku.com</a> | <a href="#" class="reset-stats">Reset stats</a></p>
+      </td></tr>
+    </tbody></table>
+  </td>
+
+  <td id="right-column">
+    <table class="col-table"><tbody>
+      <tr class="thin-row"><td align="right" style="padding-bottom:1em;">
+        <span style="float:left; margin-right:2em;" class="if-left-hidden-span level-links"></span>
+        <b><a href="#" id="theme-link">Dark mode</a></b>
+      </td></tr>
+      <tr valign="middle"><td align="center">
+        <p class="bigbig" id="message-p" style="margin-top:1em; margin-bottom:1em;"><span id="message"></span></p>
+        <div style="position:relative;">
+          <table id="puzzle_grid" cellspacing="0" cellpadding="0" class="t"><tbody></tbody></table><div id="side_keys">
+            <div id="side_keys_help" class="small">Click a square,<br>then a key</div>
+          </div>
+        </div>
+        <p style="margin-top:1.5em; margin-bottom:0;"><span class="halfbig"><b id="puzzle-label"></b> <span id="timer-line">-<span id="timer"></span>-</span> <a href="#" id="select-link">Select a puzzle...</a></span></p>
+        <p style="margin-top:1em;" id="buttons-p">
+          <input type="button" class="bs" id="check-btn" value="How am I doing?"><input type="button" class="bs" id="pause-btn" value="Pause"><input type="button" class="bs" id="clear-btn" value="Clear"><input type="button" class="bs" id="options-btn" value="Options...">
+        </p>
+        <details id="options" class="tm">
+          <summary>Options</summary>
+          <label><input type="checkbox" id="opt-dark"> Dark theme</label>
+          <label><input type="checkbox" id="opt-timer"> Show timer</label>
+          <label><input type="checkbox" id="opt-pencilmarks"> Allow pencil marks</label>
+          <label><input type="checkbox" id="opt-highlight"> Highlight mistakes when checking</label>
+          <label><input type="checkbox" id="opt-check"> Highlight mistakes as I type</label>
+          <label><input type="checkbox" id="opt-keypad"> Show number keypad</label>
+          <label><input type="checkbox" id="opt-pencil"> Keypad enters pencil marks</label>
+          <p class="small" style="margin-top:0.75em;">Keyboard: Arrows / WASD move &middot; 1&ndash;9 enter &middot; hold Space (or Shift) + 1&ndash;9 toggle a pencil mark &middot; Backspace clears &middot; Enter checks &middot; Esc hides the selection, movement keys bring it back</p>
+        </details>
+      </td></tr>
+      <tr class="thin-row if-left-hidden-row"><td align="center" style="padding-top:1em;">
+        <a href="https://www.websudoku.com/" target="_blank" rel="noreferrer">websudoku.com</a> – <a href="#" class="reset-stats">Reset stats</a>
+      </td></tr>
+    </tbody></table>
+  </td>
+</tr></tbody></table>
+
+<div id="overlay"><div id="overlay-inner"></div></div>
+
+<noscript>This Sudoku needs JavaScript.</noscript>
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

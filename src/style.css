@@ -1,0 +1,250 @@
+/* Web Sudoku recreation — the original websudoku.com stylesheet refactored
+   onto CSS variables so themes are a variable swap.
+
+   Class scheme kept from the original:
+   - cells: <td class="{c,e,f,g,h,i}{0-3}"> — the letter picks which borders
+     are thick 3x3 box borders (e/g/i = thick left, f/g = thick top,
+     h/i = thick bottom), the digit is the red error level.
+   - inputs: s = given, d = entry, w = 2-3 pencil marks, v = 4-5 pencil marks,
+     same 0-3 error suffix. */
+
+:root {
+  color-scheme: light;
+  --page-bg: #F9F9FF;
+  --text: #222222;
+  --link: #3333BB;
+  --rule: #999999;
+  --board-bg: #ffffff;
+  --cell-border: #DDDDEE;
+  --box-border: #666699;
+  --given: #000000;
+  --entry: #7777DD;
+  --pencil: #338833;
+  --err1: #FFBFBF;
+  --err2: #FF7F7F;
+  --err3: #FF3F3F;
+  --stat: #990000;
+  --fastest-bg: #FFFF66;
+  --selected: #EEF1FF;
+  --overlay-bg: rgba(0, 0, 0, 0.8);
+  --msg-green: green;
+  --msg-red: red;
+  --msg-purple: purple;
+  --msg-blue: blue;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --page-bg: #111114;
+  --text: #c8c8cc;
+  --link: #8fa3f0;
+  --rule: #44444c;
+  --board-bg: #1b1b22;
+  --cell-border: #34344a;
+  --box-border: #7d7db3;
+  --given: #ececf0;
+  --entry: #8d8df0;
+  --pencil: #62b562;
+  --err1: #4a2027;
+  --err2: #6b2028;
+  --err3: #92202b;
+  --stat: #ff7b7b;
+  --fastest-bg: #5c5410;
+  --selected: #262c49;
+  --overlay-bg: rgba(0, 0, 0, 0.85);
+  --msg-green: #7ec97e;
+  --msg-red: #ff8080;
+  --msg-purple: #c78fe0;
+  --msg-blue: #82aaff;
+}
+
+html, body {height:100%;}
+body {margin:0; background-color:var(--page-bg);}
+body,td {font-family:arial,sans-serif; color:var(--text);}
+body,table,td,input,select {font-size:12px;}
+
+.tm {margin-top:1em; margin-bottom:0;}
+.blurb {margin-top:2em; margin-bottom:1.5em;}
+.blurb ul {text-align:left; padding-left:1em; margin-top:0.5em; margin-bottom:0;}
+.blurb li {margin:0.4em 0;}
+.small {font-size:85%;}
+.halfbig {font-size:115%;}
+.big {font-size:135%;}
+.bigbig {font-size:150%;}
+
+#layout {width:100%; height:100%; border-spacing:0;}
+.col-table {width:100%; height:100%; border-spacing:0;}
+.thin-row {height:1px;}
+#left-column {width:248px; padding:16px;}
+.left-bordered {border-right:1px var(--rule) solid;}
+#right-column {padding:16px;}
+#logo {margin:1.5em 0;}
+html[data-theme="dark"] #logo img {filter:invert(0.88);} /* logo is grayscale-on-white; invert for dark theme */
+.if-left-hidden-span, .if-left-hidden-row {display:none;}
+
+table,td {padding:0;}
+.stat {color:var(--stat); font-weight:bold; padding:0.25em 0.5em;}
+.fastest {background-color:var(--fastest-bg);}
+
+a:link,a:active,a:visited {color:var(--link); text-decoration:none;}
+a:hover {text-decoration:underline;}
+
+/* --- message line --- */
+
+.msg-green {color:var(--msg-green);}
+.msg-red {color:var(--msg-red);}
+.msg-purple {color:var(--msg-purple);}
+.msg-blue {color:var(--msg-blue);}
+#message-p {min-height:1.5em;}
+
+/* --- grid cells --- */
+
+.c0,.c1,.c2,.c3,.e0,.e1,.e2,.e3,.f0,.f1,.f2,.f3,.g0,.g1,.g2,.g3,.h0,.h1,.h2,.h3,.i0,.i1,.i2,.i3 {width:32px; height:32px; vertical-align:middle; text-align:center; font-size:18pt; font-family:times,serif;}
+
+.d0,.d1,.d2,.d3,.s0,.s1,.s2,.s3,.w0,.w1,.w2,.w3,.v0,.v1,.v2,.v3 {-webkit-appearance:none; appearance:none; outline:none; border:solid 0 transparent; text-align:center; margin:0; padding:0; width:24pt; background-color:transparent;}
+.s0,.s1,.s2,.s3 {font-size:18pt; font-family:times,"times new roman",serif; color:var(--given);} /* givens */
+.d0,.d1,.d2,.d3 {font-size:16pt; font-family:"lucida handwriting","comic sans ms",sans-serif; color:var(--entry);} /* entries */
+.w0,.w1,.w2,.w3 {font-size:10pt; font-family:"lucida handwriting","comic sans ms",sans-serif; color:var(--pencil);} /* 2 or 3 pencil marks */
+.v0,.v1,.v2,.v3 {font-size:7pt; font-family:"lucida handwriting","comic sans ms",sans-serif; color:var(--pencil);} /* 4 or 5 pencil marks */
+
+.d1,.s1,.w1,.v1,.c1,.e1,.f1,.g1,.h1,.i1 {background-color:var(--err1);}
+.d2,.s2,.w2,.v2,.c2,.e2,.f2,.g2,.h2,.i2 {background-color:var(--err2);}
+.d3,.s3,.w3,.v3,.c3,.e3,.f3,.g3,.h3,.i3 {background-color:var(--err3);}
+
+.t {border-collapse:collapse; background-color:var(--board-bg); border-right: var(--box-border) solid 2px;}
+.c0,.e0,.f0,.g0,.h0,.i0 {border-left: var(--cell-border) solid 1px; border-top: var(--cell-border) solid 1px;}
+.c1,.e1,.f1,.g1,.h1,.i1 {border-left: var(--err1) solid 1px; border-top: var(--err1) solid 1px;}
+.c2,.e2,.f2,.g2,.h2,.i2 {border-left: var(--err2) solid 1px; border-top: var(--err2) solid 1px;}
+.c3,.e3,.f3,.g3,.h3,.i3 {border-left: var(--err3) solid 1px; border-top: var(--err3) solid 1px;}
+.e0,.e1,.e2,.e3,.g0,.g1,.g2,.g3,.i0,.i1,.i2,.i3 {border-left: var(--box-border) solid 2px;}
+.f0,.f1,.f2,.f3,.g0,.g1,.g2,.g3 {border-top: var(--box-border) solid 2px;}
+.h0,.h1,.h2,.h3,.i0,.i1,.i2,.i3 {border-bottom: var(--box-border) solid 2px;}
+
+/* focus box on the fixed-size td, not the input, whose height varies with its font */
+.t td:focus-within {outline:2px solid var(--box-border); outline-offset:-2px;}
+.t input:focus {outline:none;}
+.t input {caret-color:transparent;} /* focus outline marks the cell; no blinking caret */
+/* inputs fill the cell via absolute positioning — percentage heights inside
+   table cells don't resolve in Gecko, which top-aligned and mis-centered text */
+.t input {display:block; box-sizing:border-box; position:absolute; inset:0; width:100%; height:100%;}
+/* per-font optical centering, calibrated by headless screenshots at multiple
+   breakpoints: Times metrics sit its digits slightly high, the handwriting
+   font slightly low; em values so they track every breakpoint's font size */
+.s0,.s1,.s2,.s3 {transform:translateY(0.02em);}
+.d0,.d1,.d2,.d3 {transform:translateY(-0.04em);}
+.pm span {transform:translateY(-0.04em);}
+/* Gecko (Firefox/Zen) draws Times ~0.07em higher than Blink does; only Gecko
+   matches -moz-appearance in @supports */
+@supports (-moz-appearance: none) {
+  .s0,.s1,.s2,.s3 {transform:translateY(0.09em);}
+}
+.t input::selection {background:transparent;}
+
+/* --- pencil-mark mini-grid (custom: each candidate 1-9 has a fixed 3x3 spot) --- */
+
+.t td {position:relative;}
+.pm {position:absolute; inset:0; display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); place-items:center; pointer-events:none; font-family:"lucida handwriting","comic sans ms",sans-serif; color:var(--pencil); font-size:8px; line-height:1;}
+
+/* --- side keypad --- */
+
+#side_keys {position:fixed; top:0; right:16px; height:100%;}
+#side_keys.hidden {display:none !important;}
+#side_keys table {height:100%;}
+#side_keys_help {text-align:center; margin-top:0.5em;}
+
+.tk {text-align:center; vertical-align:middle; border:1px solid var(--cell-border); background-color:var(--board-bg); cursor:pointer; user-select:none; -webkit-user-select:none;}
+#side_keys .tk {border-left: var(--box-border) solid 2px; border-right: var(--box-border) solid 2px; padding-left:6px; padding-right:6px;}
+.tk:hover {background-color:var(--selected);}
+.tk.active {background-color:var(--selected); font-weight:bold;}
+
+/* --- controls, options --- */
+
+.bs {margin-left:0.1em; margin-right:0.1em;}
+#options summary {cursor:pointer;}
+#options label {display:block; margin:0.4em 0;}
+#stats-table {border-collapse:collapse; margin-left:auto; margin-right:auto;}
+
+/* --- overlay (pause / win) and dialogs (clear / reset confirm) --- */
+
+#overlay {z-index:2; background-color:var(--overlay-bg); position:fixed; inset:0; text-align:center; display:none;}
+#overlay.shown {display:flex; align-items:center; justify-content:center;}
+#overlay-inner {background-color:var(--board-bg); border:2px solid var(--box-border); padding:1.5em 2.5em; max-width:80%;}
+#overlay-inner.dialog {border:none; border-radius:8px; box-shadow: rgba(0, 0, 0, 0.25) 0px 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px; text-align:left; width:24em; max-width:85%; padding:0.75em; font-size:115%;}
+#overlay-inner.dialog p {margin:0.75em; font-weight:bold;}
+.dialog-buttons {text-align:right; margin:0.75em;}
+.dialog-buttons input {width:5em; margin-left:0.5em;}
+
+/* --- responsive steps, from the original --- */
+
+@media (min-width: 481px) {
+    .bs {margin-left:0.5em; margin-right:0.5em;}
+}
+
+@media (max-width: 740px) {
+    #left-column {display:none;}
+    .if-left-hidden-span {display:inline;}
+    .if-left-hidden-row {display:table-row;}
+    #side_keys .tk {width:16pt; height:17pt;}
+}
+
+@media (max-width: 480px) { /* Below default size, for small mobile screen */
+    #side_keys, #puzzle_grid { display:inline-block; vertical-align:middle; }
+    #side_keys { position:relative; right:-5px; height:auto;}
+
+    .c0,.c1,.c2,.c3,.e0,.e1,.e2,.e3,.f0,.f1,.f2,.f3,.g0,.g1,.g2,.g3,.h0,.h1,.h2,.h3,.i0,.i1,.i2,.i3 {width:19pt; height:20pt;} /* cells */
+    .s0,.s1,.s2,.s3 {width:19pt; font-size:13pt;} /* givens */
+    .d0,.d1,.d2,.d3 {width:19pt; font-size:13pt;} /* entries */
+    .w0,.w1,.w2,.w3 {width:19pt; font-size:9pt;} /* 2 or 3 pencil marks */
+    .v0,.v1,.v2,.v3 {width:19pt; font-size:7pt;} /* 4 or 5 pencil marks */
+    .pm {font-size:7px;}
+
+    #side_keys_help {display:none;}
+}
+
+@media (min-width:950px) and (min-height:720px) { /* One step up from default */
+    body,table,td,input,select {font-size:13px;}
+    input[type="button"] {font-size:14px;}
+
+    .c0,.c1,.c2,.c3,.e0,.e1,.e2,.e3,.f0,.f1,.f2,.f3,.g0,.g1,.g2,.g3,.h0,.h1,.h2,.h3,.i0,.i1,.i2,.i3 {width:30pt; height:31pt}
+    .s0,.s1,.s2,.s3 {width:30pt; font-size:22pt;}
+    .d0,.d1,.d2,.d3 {width:30pt; font-size:20pt;}
+    .w0,.w1,.w2,.w3 {width:30pt; font-size:13pt;}
+    .v0,.v1,.v2,.v3 {width:30pt; font-size:9pt;}
+    .pm {font-size:11px;}
+}
+
+@media (min-width:1100px) and (min-height:820px) { /* Two steps up from default */
+    body,table,td,input,select {font-size:14px;}
+    input[type="button"] {font-size:16px;}
+
+    .c0,.c1,.c2,.c3,.e0,.e1,.e2,.e3,.f0,.f1,.f2,.f3,.g0,.g1,.g2,.g3,.h0,.h1,.h2,.h3,.i0,.i1,.i2,.i3 {width:36pt; height:37pt}
+    .s0,.s1,.s2,.s3 {width:36pt; font-size:26pt;}
+    .d0,.d1,.d2,.d3 {width:36pt; font-size:24pt;}
+    .w0,.w1,.w2,.w3 {width:36pt; font-size:15pt;}
+    .v0,.v1,.v2,.v3 {width:36pt; font-size:11pt;}
+    .pm {font-size:13px;}
+}
+
+@media (min-width:1250px) and (min-height:920px) { /* Three steps up from default */
+    body,table,td,input,select {font-size:15px;}
+    input[type="button"] {font-size:18px;}
+
+    .c0,.c1,.c2,.c3,.e0,.e1,.e2,.e3,.f0,.f1,.f2,.f3,.g0,.g1,.g2,.g3,.h0,.h1,.h2,.h3,.i0,.i1,.i2,.i3 {width:42pt; height:43pt}
+    .s0,.s1,.s2,.s3 {width:42pt; font-size:30pt;}
+    .d0,.d1,.d2,.d3 {width:42pt; font-size:28pt;}
+    .w0,.w1,.w2,.w3 {width:42pt; font-size:17pt;}
+    .v0,.v1,.v2,.v3 {width:42pt; font-size:13pt;}
+    .pm {font-size:15px;}
+}
+
+/* --- print: just the grid, black borders like the original print pages --- */
+
+@media print {
+    #left-column, .thin-row, #message-p, #buttons-p, #options, #side_keys, #overlay {display:none !important;}
+    body {background:#fff;}
+    .left-bordered {border-right:none;}
+    .t {border:2px solid #000;}
+    .t td {border-color:#000 !important;}
+    .t input {color:#000 !important; background-color:#fff !important;}
+    .c1,.c2,.c3,.e1,.e2,.e3,.f1,.f2,.f3,.g1,.g2,.g3,.h1,.h2,.h3,.i1,.i2,.i3 {background-color:#fff !important;}
+}
