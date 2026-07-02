@@ -173,6 +173,7 @@ a:hover {text-decoration:underline;}
 #overlay-inner.dialog p {margin:0.75em; font-weight:bold;}
 .dialog-buttons {text-align:right; margin:0.75em;}
 .dialog-buttons input {width:5em; margin-left:0.5em;}
+#overlay-inner.dialog input[type="text"] {font:inherit; width:11em;}
 
 /* --- responsive steps, from the original --- */
 

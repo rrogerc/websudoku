@@ -1,5 +1,5 @@
 import './style.css'
-import { getSudoku } from 'sudoku-gen'
+import { generatePuzzle, MAX_PUZZLE_NUMBER } from './generator.js'
 import { registerSW } from 'virtual:pwa-register'
 
 registerSW({ immediate: true })
@@ -50,7 +50,7 @@ let stats = Object.assign(
 
 const game = {
   level: 'easy',
-  number: 0, // display-only puzzle number, like "Hard Puzzle 9,778,545,666"
+  number: 0, // seeds the generator, so "Hard Puzzle 9,778,545,666" is reproducible
   givens: [], // 81 digits, 0 = empty
   solution: [], // 81 digits
   entries: [], // 81 strings: '' or a single committed digit
@@ -295,13 +295,23 @@ function setPencilMode(on) {
 
 /* ---------- puzzles ---------- */
 
-function newPuzzle(level) {
-  const s = getSudoku(level)
+let generating = false
+
+async function newPuzzle(level, number = 1 + Math.floor(Math.random() * MAX_PUZZLE_NUMBER)) {
+  if (generating) return
+  generating = true
+  setMessage('Selecting a puzzle&hellip;')
+  let puzzle
+  try {
+    puzzle = await generatePuzzle(level, number)
+  } finally {
+    generating = false
+  }
   selected = -1 // fresh puzzle: movement keys start the selection at the center
   game.level = level
-  game.number = 1 + Math.floor(Math.random() * 9_999_999_999)
-  game.givens = [...s.puzzle].map((ch) => (ch >= '1' && ch <= '9' ? +ch : 0))
-  game.solution = [...s.solution].map(Number)
+  game.number = number
+  game.givens = puzzle.givens
+  game.solution = puzzle.solution
   game.entries = Array(81).fill('')
   game.marks = Array(81).fill('')
   game.err = Array(81).fill(0)
@@ -337,7 +347,7 @@ function saveGame() {
 
 function restoreGame(saved) {
   game.level = saved.level
-  game.number = saved.number || 1 + Math.floor(Math.random() * 9_999_999_999)
+  game.number = saved.number || 1 + Math.floor(Math.random() * MAX_PUZZLE_NUMBER)
   game.givens = [...saved.givens].map(Number)
   game.solution = [...saved.solution].map(Number)
   // migrate pre-mini-grid saves, where pencil marks were multi-digit entries
@@ -516,6 +526,35 @@ function confirmDialog(text, onOk) {
   })
 }
 
+// Puzzle numbers seed the generator, so entering one deals that exact puzzle
+function selectPuzzleDialog() {
+  showOverlay(
+    `<p><b>Select a puzzle</b></p>
+     <p class="small">Enter a puzzle number from 1 to ${MAX_PUZZLE_NUMBER.toLocaleString('en-US')}</p>
+     <p><input type="text" id="dlg-number" inputmode="numeric" size="14"></p>
+     <div class="dialog-buttons">
+       <input type="button" id="dlg-cancel" value="Cancel">
+       <input type="button" id="dlg-ok" value="OK">
+     </div>`,
+    true
+  )
+  const field = $('dlg-number')
+  field.value = String(game.number)
+  field.focus()
+  field.select()
+  const submit = () => {
+    const n = Number(field.value.replace(/[^0-9]/g, ''))
+    if (n < 1 || n > MAX_PUZZLE_NUMBER) return
+    hideOverlay()
+    newPuzzle(game.level, n)
+  }
+  field.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') submit()
+  })
+  $('dlg-cancel').addEventListener('click', hideOverlay)
+  $('dlg-ok').addEventListener('click', submit)
+}
+
 /* ---------- chrome ---------- */
 
 function setMessage(text, color = null) {
@@ -617,7 +656,7 @@ $('options-btn').addEventListener('click', () => {
 })
 $('select-link').addEventListener('click', (e) => {
   e.preventDefault()
-  newPuzzle(game.level)
+  selectPuzzleDialog()
 })
 $('theme-link').addEventListener('click', (e) => {
   e.preventDefault()
