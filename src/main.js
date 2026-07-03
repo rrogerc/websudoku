@@ -39,6 +39,7 @@ const settings = Object.assign(
     checkAsYouType: false,
     showKeypad: matchMedia('(pointer: coarse)').matches, // original only shows keys on touch
     keypadPencil: false,
+    boardOnly: false, // "Just the puzzle" mode: chrome hidden, scroll locked
   },
   readStore('websudoku:settings', {})
 )
@@ -141,6 +142,12 @@ function buildGrid() {
 
     if (e.key === 'Escape') {
       inputs[i].blur() // hide the selection box; WASD/arrows bring it back
+      return
+    }
+
+    if (e.key === 'f' || e.key === 'F') {
+      e.preventDefault()
+      setBoardOnly(!settings.boardOnly)
       return
     }
 
@@ -298,6 +305,12 @@ function setPencilMode(on) {
   pencilMode = on
   pencilKey.classList.toggle('active', on)
   $('opt-pencil').checked = on
+}
+
+function setBoardOnly(on) {
+  settings.boardOnly = on
+  writeStore('websudoku:settings', settings)
+  applySettings()
 }
 
 /* ---------- puzzles ---------- */
@@ -635,6 +648,7 @@ function buildKeys() {
 function applySettings() {
   document.documentElement.dataset.theme = settings.darkTheme ? 'dark' : 'light'
   document.documentElement.classList.toggle('no-keypad', !settings.showKeypad)
+  document.documentElement.classList.toggle('board-only', !!settings.boardOnly)
   // status/title bar matches the page background (values from --page-bg)
   document.querySelector('meta[name="theme-color"]').content = settings.darkTheme ? '#111114' : '#F9F9FF'
   $('theme-link').textContent = settings.darkTheme ? 'Light mode' : 'Dark mode'
@@ -697,6 +711,24 @@ $('theme-link').addEventListener('click', (e) => {
   settings.darkTheme = !settings.darkTheme
   writeStore('websudoku:settings', settings)
   applySettings()
+})
+$('focus-link').addEventListener('click', (e) => {
+  e.preventDefault()
+  setBoardOnly(true)
+})
+$('focus-exit').addEventListener('click', (e) => {
+  e.preventDefault()
+  setBoardOnly(false)
+})
+// F toggles board-only mode even when no cell is selected (the grid handler
+// covers focused cells; dialogs and other fields are excluded here)
+document.addEventListener('keydown', (e) => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return
+  if (e.key !== 'f' && e.key !== 'F') return
+  const t = e.target
+  if (t instanceof HTMLElement && (t.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName))) return
+  e.preventDefault()
+  setBoardOnly(!settings.boardOnly)
 })
 document.body.addEventListener('click', (e) => {
   const level = e.target.closest('a[data-level]')?.dataset.level

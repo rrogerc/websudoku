@@ -151,6 +151,21 @@ body, a, label, summary, input, .tk, .t td {touch-action:manipulation;}
 .t td {position:relative;}
 .pm {position:absolute; inset:0; display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); place-items:center; pointer-events:none; font-family:"lucida handwriting","comic sans ms",sans-serif; color:var(--pencil); font-size:8px; line-height:1;}
 
+/* --- "Just the puzzle" (board-only) mode: message + grid (+ keypad on touch), nothing else --- */
+
+#focus-exit {display:none; position:fixed; top:max(10px, env(safe-area-inset-top, 0px)); right:max(12px, env(safe-area-inset-right, 0px)); z-index:3; font-size:16px; line-height:1; padding:8px; color:var(--rule);}
+html:not(.no-keypad) #focus-exit {right:80px;} /* clear of the side keypad column when it's enabled */
+html.board-only #focus-exit {display:block;}
+/* overflow lock: with the chrome hidden everything fits the viewport, so nothing scrolls
+   or rubber-bands (overscroll-behavior needs iOS 16+) */
+html.board-only, html.board-only body {overflow:hidden; overscroll-behavior:none;}
+html.board-only #left-column,
+html.board-only .thin-row,
+html.board-only #info-p,
+html.board-only #buttons-p,
+html.board-only #options,
+html.board-only .if-left-hidden-row {display:none;}
+
 /* --- side keypad --- */
 
 #side_keys {position:fixed; top:0; right:16px; height:100%;}
@@ -222,6 +237,9 @@ body, a, label, summary, input, .tk, .t td {touch-action:manipulation;}
     #side_keys tr:nth-child(11) .tk {grid-column:6 / 10;}
 
     #side_keys_help {display:none;}
+
+    /* keypad is a bottom bar here, not a right column — corner is free again */
+    html:not(.no-keypad) #focus-exit {right:max(12px, env(safe-area-inset-right, 0px));}
 }
 
 @media (pointer: coarse) {
