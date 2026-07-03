@@ -58,6 +58,7 @@ html[data-theme="dark"] {
   --msg-blue: #82aaff;
 }
 
+html {-webkit-text-size-adjust:100%; text-size-adjust:100%;} /* no iOS font inflation in landscape */
 html, body {height:100%;}
 body {margin:0; background-color:var(--page-bg);}
 body,td {font-family:arial,sans-serif; color:var(--text);}
@@ -72,7 +73,7 @@ body,table,td,input,select {font-size:12px;}
 .big {font-size:135%;}
 .bigbig {font-size:150%;}
 
-#layout {width:100%; height:100%; border-spacing:0;}
+#layout {width:100%; height:100%; border-spacing:0; padding-left:env(safe-area-inset-left, 0px); padding-right:env(safe-area-inset-right, 0px);}
 .col-table {width:100%; height:100%; border-spacing:0;}
 .thin-row {height:1px;}
 #left-column {width:248px; padding:16px;}
@@ -88,6 +89,11 @@ table,td {padding:0;}
 
 a:link,a:active,a:visited {color:var(--link); text-decoration:none;}
 a:hover {text-decoration:underline;}
+
+/* --- touch behavior: no double-tap zoom, no long-press callout/selection magnifier --- */
+
+body, a, label, summary, input, .tk, .t td {touch-action:manipulation;}
+.t, #side_keys {-webkit-touch-callout:none; -webkit-user-select:none; user-select:none;}
 
 /* --- message line --- */
 
@@ -154,7 +160,8 @@ a:hover {text-decoration:underline;}
 
 .tk {text-align:center; vertical-align:middle; border:1px solid var(--cell-border); background-color:var(--board-bg); cursor:pointer; user-select:none; -webkit-user-select:none;}
 #side_keys .tk {border-left: var(--box-border) solid 2px; border-right: var(--box-border) solid 2px; padding-left:6px; padding-right:6px;}
-.tk:hover {background-color:var(--selected);}
+@media (hover:hover) {.tk:hover {background-color:var(--selected);}} /* hover-only devices; touch would get sticky hover */
+.tk:active {background-color:var(--selected);}
 .tk.active {background-color:var(--selected); font-weight:bold;}
 
 /* --- controls, options --- */
@@ -188,18 +195,37 @@ a:hover {text-decoration:underline;}
     #side_keys .tk {width:16pt; height:17pt;}
 }
 
-@media (max-width: 480px) { /* Below default size, for small mobile screen */
-    #side_keys, #puzzle_grid { display:inline-block; vertical-align:middle; }
-    #side_keys { position:relative; right:-5px; height:auto;}
+@media (max-width: 480px) { /* Phone portrait: full-width grid, keypad docked at the bottom */
+    /* cells track the viewport so the grid always fits, whatever the zoom/Display Zoom level */
+    :root {--cell: min(44px, calc((100vw - 24px) / 9));}
 
-    .c0,.c1,.c2,.c3,.e0,.e1,.e2,.e3,.f0,.f1,.f2,.f3,.g0,.g1,.g2,.g3,.h0,.h1,.h2,.h3,.i0,.i1,.i2,.i3 {width:19pt; height:20pt;} /* cells */
-    .s0,.s1,.s2,.s3 {width:19pt; font-size:13pt;} /* givens */
-    .d0,.d1,.d2,.d3 {width:19pt; font-size:13pt;} /* entries */
-    .w0,.w1,.w2,.w3 {width:19pt; font-size:9pt;} /* 2 or 3 pencil marks */
-    .v0,.v1,.v2,.v3 {width:19pt; font-size:7pt;} /* 4 or 5 pencil marks */
-    .pm {font-size:7px;}
+    /* bottom padding = keypad clearance so the fixed bar never covers the info line */
+    #right-column {padding: max(8px, env(safe-area-inset-top, 0px)) 4px calc(126px + env(safe-area-inset-bottom, 0px));}
+    html.no-keypad #right-column {padding-bottom:16px;}
+
+    .c0,.c1,.c2,.c3,.e0,.e1,.e2,.e3,.f0,.f1,.f2,.f3,.g0,.g1,.g2,.g3,.h0,.h1,.h2,.h3,.i0,.i1,.i2,.i3 {width:var(--cell); height:var(--cell);} /* cells */
+    .s0,.s1,.s2,.s3 {font-size:calc(var(--cell) * 0.73);} /* givens — ratios match the desktop breakpoints */
+    .d0,.d1,.d2,.d3 {font-size:calc(var(--cell) * 0.65);} /* entries */
+    .w0,.w1,.w2,.w3 {font-size:calc(var(--cell) * 0.40);} /* 2 or 3 pencil marks */
+    .v0,.v1,.v2,.v3 {font-size:calc(var(--cell) * 0.30);} /* 4 or 5 pencil marks */
+    .pm {font-size:calc(var(--cell) * 0.27);}
+
+    .bs {font-size:14px; padding:6px 10px;}
+
+    /* keypad becomes a fixed bottom thumb bar: 1-9 across, then ⌫ / ✎ */
+    #side_keys {position:fixed; top:auto; right:0; bottom:0; left:0; height:auto; z-index:1; background-color:var(--page-bg); border-top:1px solid var(--rule); padding:8px 8px calc(8px + env(safe-area-inset-bottom, 0px));}
+    #side_keys table {height:auto; width:100%; max-width:420px; margin:0 auto;}
+    #side_keys tbody {display:grid; grid-template-columns:repeat(9, 1fr); gap:6px;}
+    #side_keys tr {display:contents;}
+    #side_keys .tk {display:flex; align-items:center; justify-content:center; width:auto; height:44px; font-size:20px; border:1px solid var(--cell-border); padding:0;}
+    #side_keys tr:nth-child(10) .tk {grid-column:1 / 6;}
+    #side_keys tr:nth-child(11) .tk {grid-column:6 / 10;}
 
     #side_keys_help {display:none;}
+}
+
+@media (pointer: coarse) {
+    #overlay-inner.dialog input[type="text"] {font-size:16px;} /* below 16px, iOS auto-zooms the page on focus */
 }
 
 @media (min-width:950px) and (min-height:720px) { /* One step up from default */

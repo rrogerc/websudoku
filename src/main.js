@@ -118,6 +118,11 @@ function buildGrid() {
     }
   }
 
+  // touch only: long-pressing a cell must not pop a context menu (desktop right-click stays)
+  $('puzzle_grid').addEventListener('contextmenu', (e) => {
+    if (matchMedia('(pointer: coarse)').matches) e.preventDefault()
+  })
+
   $('puzzle_grid').addEventListener('keydown', (e) => {
     const i = inputs.indexOf(e.target)
     if (i < 0) return
@@ -256,19 +261,21 @@ function clearCell(i) {
   saveGame()
 }
 
-function applyKey(key) {
+function applyKey(key, asPencil = false) {
   if (key === 'pencil') {
     setPencilMode(!pencilMode)
     return
   }
   if (game.done) return
-  if (selected < 0 || !gridHasFocus() || game.givens[selected] !== 0) {
+  if (selected < 0 || game.givens[selected] !== 0) {
     setMessage('Click a square first, then a key.')
     return
   }
+  // touch focus is fragile (overlays, iOS quirks) — the remembered cell still applies
+  if (!gridHasFocus()) inputs[selected].focus()
   if (key === 'del') {
     clearCell(selected)
-  } else if (pencilMode && settings.allowPencilMarks) {
+  } else if (asPencil || (pencilMode && settings.allowPencilMarks)) {
     togglePencilDigit(selected, key)
   } else {
     setEntry(selected, game.entries[selected] === key ? '' : key)
@@ -585,16 +592,40 @@ function renderStats() {
 
 function buildKeys() {
   const table = document.createElement('table')
+  table.addEventListener('contextmenu', (e) => e.preventDefault()) // long-press must not open a menu
   const tbody = table.createTBody()
   for (const key of ['1', '2', '3', '4', '5', '6', '7', '8', '9', '⌫', '✎']) {
     const td = tbody.insertRow().insertCell()
     td.className = 'tk'
     td.textContent = key
     const action = key === '⌫' ? 'del' : key === '✎' ? 'pencil' : key
-    // preventDefault keeps focus on the grid cell so the key applies to it
-    td.addEventListener('pointerdown', (e) => e.preventDefault())
-    td.addEventListener('click', () => applyKey(action))
     if (action === 'pencil') pencilKey = td
+    let pressTimer
+    let longPressed = false
+    // preventDefault keeps focus on the grid cell so the key applies to it
+    td.addEventListener('pointerdown', (e) => {
+      e.preventDefault()
+      if (action === 'del' || action === 'pencil') return
+      // long-press a digit key = toggle it as a pencil mark, the touch analog
+      // of hold-Space/Shift + digit; the click that follows is swallowed
+      longPressed = false
+      clearTimeout(pressTimer)
+      pressTimer = setTimeout(() => {
+        longPressed = true
+        applyKey(action, true)
+      }, 500)
+    })
+    const cancelPress = () => clearTimeout(pressTimer)
+    td.addEventListener('pointerup', cancelPress)
+    td.addEventListener('pointerleave', cancelPress)
+    td.addEventListener('pointercancel', cancelPress)
+    td.addEventListener('click', () => {
+      if (longPressed) {
+        longPressed = false
+        return
+      }
+      applyKey(action)
+    })
   }
   $('side_keys').prepend(table)
 }
@@ -603,6 +634,9 @@ function buildKeys() {
 
 function applySettings() {
   document.documentElement.dataset.theme = settings.darkTheme ? 'dark' : 'light'
+  document.documentElement.classList.toggle('no-keypad', !settings.showKeypad)
+  // status/title bar matches the page background (values from --page-bg)
+  document.querySelector('meta[name="theme-color"]').content = settings.darkTheme ? '#111114' : '#F9F9FF'
   $('theme-link').textContent = settings.darkTheme ? 'Light mode' : 'Dark mode'
   $('opt-dark').checked = settings.darkTheme
   $('opt-timer').checked = settings.showTimer

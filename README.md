@@ -3,8 +3,10 @@
 Personal recreation of [Web Sudoku](https://www.websudoku.com/) — same look and feel, plus the options the original never had (dark theme, configurable controls, offline PWA).
 
 - Vite + vanilla JS, no framework
-- Puzzles generated client-side with [sudoku-gen](https://www.npmjs.com/package/sudoku-gen) (Easy / Medium / Hard / Evil→expert)
+- Puzzles generated client-side with [qqwing](https://www.npmjs.com/package/qqwing), graded into the four websudoku levels (Easy / Medium / Hard / Evil) by technique and givens count
+- Puzzle numbers are real: the number seeds the generator, so "Select a puzzle..." with the same number always deals the same puzzle
 - The in-progress game, stats, and settings persist in localStorage — reloads resume where you left off
+- Phone-friendly: full-width grid with a bottom keypad (long-press a digit key for a pencil mark), zoom locked so the layout always fits
 - Installable PWA (vite-plugin-pwa), fully offline once installed
 
 ## Commands
