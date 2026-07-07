@@ -659,10 +659,13 @@ function applySettings() {
   document.documentElement.classList.toggle('board-only', !!settings.boardOnly)
   // status/title bar matches the page background (values from --page-bg)
   document.querySelector('meta[name="theme-color"]').content = isDark() ? '#111114' : '#F9F9FF'
-  // the link names the mode a click switches to (light -> dark -> auto -> light)
-  $('theme-link').textContent = { light: 'Dark mode', dark: 'Auto mode', auto: 'Light mode' }[settings.theme]
-  $('theme-link').title =
-    settings.theme === 'auto' ? 'Theme now matches the system' : `Theme is now always ${settings.theme}`
+  // the link shows the current mode; clicking cycles light -> dark -> auto
+  $('theme-link').textContent = { light: 'Theme: Light', dark: 'Theme: Dark', auto: 'Theme: Auto' }[settings.theme]
+  $('theme-link').title = {
+    light: 'Click to switch to dark',
+    dark: 'Click to switch to auto (match the system)',
+    auto: 'Click to switch to light',
+  }[settings.theme]
   $('opt-theme').value = settings.theme
   $('opt-timer').checked = settings.showTimer
   $('opt-pencilmarks').checked = settings.allowPencilMarks
