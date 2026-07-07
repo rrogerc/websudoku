@@ -6,13 +6,14 @@
 //
 //   websudoku Easy    34-36 givens  naked singles only              (qqwing Simple)
 //   websudoku Medium  28-32 givens  singles + a few hidden singles  (Simple/Easy)
-//   websudoku Hard    26-28 givens  ~2/3 hidden-single heavy, ~1/3 need pairs (1-6 steps)
-//   websudoku Evil    24-26 givens  pair-technique heavy (avg ~4 steps), never guessing
+//   clone Hard        26-28 givens  60% hidden-single heavy, 40% need pairs (2-6 steps)
+//   clone Evil        24-26 givens  pair-technique heavy (avg ~5 steps), never guessing
 //
-// Hard's singles/pairs split is decided per puzzle number by the seeded rng,
-// matching the live site's observed mix; Evil demands >=3 pair-type steps
-// (live average 3.9). Both stay in qqwing Intermediate at most - Expert
-// (guessing required) is never used.
+// Hard and Evil deliberately sit a notch ABOVE the live site: live Hard is
+// ~1/3 pair-puzzles averaging 0.8 pair steps (clone: 40% / ~1.3), live Evil
+// averages 3.9 pair steps (clone: ~5). Hard's singles/pairs split is decided
+// per puzzle number by the seeded rng. Both stay in qqwing Intermediate at
+// most - Expert (guessing required) is never used.
 //
 // Every observed websudoku puzzle was 180°-rotationally symmetric with a
 // unique solution, so generation uses ROTATE180 (qqwing guarantees the unique
@@ -89,7 +90,7 @@ function tryGenerate(level, wantPairs) {
       clues >= 26 &&
       clues <= 28 &&
       (wantPairs
-        ? tier === qqwing.Difficulty.INTERMEDIATE && pairs <= 6
+        ? tier === qqwing.Difficulty.INTERMEDIATE && pairs >= 2 && pairs <= 6
         : tier === qqwing.Difficulty.EASY && hiddenSingles >= 6)
   // expert = websudoku Evil; >=3 pair steps matches the live site's average
   else ok = tier === qqwing.Difficulty.INTERMEDIATE && clues >= 24 && clues <= 26 && pairs >= 3
@@ -105,10 +106,10 @@ function tryGenerate(level, wantPairs) {
 // keeps the UI responsive on slow devices.
 export async function generatePuzzle(level, number) {
   const rng = mulberry32(seedFor(level, number))
-  // a third of Hard numbers demand a pair-technique puzzle (the live site's
-  // observed mix); drawn from the seeded rng so it's baked into the number.
-  // Only hard consumes this draw - easy/medium numbering predates it.
-  const wantPairs = level === 'hard' && rng() < 1 / 3
+  // 40% of Hard numbers demand a pair-technique puzzle (live site: ~1/3, so
+  // the clone skews harder); drawn from the seeded rng so it's baked into the
+  // number. Only hard consumes this draw - easy/medium numbering predates it.
+  const wantPairs = level === 'hard' && rng() < 0.4
   const native = Math.random
   for (let tries = 0; tries < 3000; ) {
     Math.random = rng
