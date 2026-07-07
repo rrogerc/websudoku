@@ -32,7 +32,7 @@ const writeStore = (key, value) => localStorage.setItem(key, JSON.stringify(valu
 
 const settings = Object.assign(
   {
-    darkTheme: matchMedia('(prefers-color-scheme: dark)').matches,
+    theme: 'auto', // 'light' | 'dark' | 'auto' (follow the system)
     showTimer: true,
     allowPencilMarks: true,
     highlightWrong: true,
@@ -43,6 +43,14 @@ const settings = Object.assign(
   },
   readStore('websudoku:settings', {})
 )
+// pre-auto settings stored a boolean; keep whatever those installs showed
+if (typeof settings.darkTheme === 'boolean') {
+  settings.theme = settings.darkTheme ? 'dark' : 'light'
+  delete settings.darkTheme
+}
+
+const systemDark = matchMedia('(prefers-color-scheme: dark)')
+const isDark = () => settings.theme === 'dark' || (settings.theme === 'auto' && systemDark.matches)
 
 let stats = Object.assign(
   Object.fromEntries(LEVELS.map((l) => [l.key, { wins: 0, fastest: null }])),
@@ -646,13 +654,16 @@ function buildKeys() {
 /* ---------- options ---------- */
 
 function applySettings() {
-  document.documentElement.dataset.theme = settings.darkTheme ? 'dark' : 'light'
+  document.documentElement.dataset.theme = isDark() ? 'dark' : 'light'
   document.documentElement.classList.toggle('no-keypad', !settings.showKeypad)
   document.documentElement.classList.toggle('board-only', !!settings.boardOnly)
   // status/title bar matches the page background (values from --page-bg)
-  document.querySelector('meta[name="theme-color"]').content = settings.darkTheme ? '#111114' : '#F9F9FF'
-  $('theme-link').textContent = settings.darkTheme ? 'Light mode' : 'Dark mode'
-  $('opt-dark').checked = settings.darkTheme
+  document.querySelector('meta[name="theme-color"]').content = isDark() ? '#111114' : '#F9F9FF'
+  // the link names the mode a click switches to (light -> dark -> auto -> light)
+  $('theme-link').textContent = { light: 'Dark mode', dark: 'Auto mode', auto: 'Light mode' }[settings.theme]
+  $('theme-link').title =
+    settings.theme === 'auto' ? 'Theme now matches the system' : `Theme is now always ${settings.theme}`
+  $('opt-theme').value = settings.theme
   $('opt-timer').checked = settings.showTimer
   $('opt-pencilmarks').checked = settings.allowPencilMarks
   $('opt-highlight').checked = settings.highlightWrong
@@ -672,7 +683,10 @@ function wireOptions() {
       settings[key] = e.target.checked
       save()
     })
-  bind('opt-dark', 'darkTheme')
+  $('opt-theme').addEventListener('change', (e) => {
+    settings.theme = e.target.value
+    save()
+  })
   bind('opt-timer', 'showTimer')
   bind('opt-pencilmarks', 'allowPencilMarks')
   bind('opt-highlight', 'highlightWrong')
@@ -708,9 +722,13 @@ $('select-link').addEventListener('click', (e) => {
 })
 $('theme-link').addEventListener('click', (e) => {
   e.preventDefault()
-  settings.darkTheme = !settings.darkTheme
+  settings.theme = { light: 'dark', dark: 'auto', auto: 'light' }[settings.theme] || 'auto'
   writeStore('websudoku:settings', settings)
   applySettings()
+})
+// in auto, follow the OS theme live (flip at sunset, etc.)
+systemDark.addEventListener('change', () => {
+  if (settings.theme === 'auto') applySettings()
 })
 $('focus-link').addEventListener('click', (e) => {
   e.preventDefault()

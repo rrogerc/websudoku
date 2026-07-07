@@ -184,6 +184,7 @@ html.board-only .if-left-hidden-row {display:none;}
 .bs {margin-left:0.1em; margin-right:0.1em;}
 #options summary {cursor:pointer;}
 #options label {display:block; margin:0.4em 0;}
+#options select {font:inherit;}
 #stats-table {border-collapse:collapse; margin-left:auto; margin-right:auto;}
 
 /* --- overlay (pause / win) and dialogs (clear / reset confirm) --- */
@@ -244,6 +245,7 @@ html.board-only .if-left-hidden-row {display:none;}
 
 @media (pointer: coarse) {
     #overlay-inner.dialog input[type="text"] {font-size:16px;} /* below 16px, iOS auto-zooms the page on focus */
+    #options select {font-size:16px;} /* same iOS auto-zoom rule applies to selects */
 }
 
 @media (min-width:950px) and (min-height:720px) { /* One step up from default */
