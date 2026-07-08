@@ -30,6 +30,14 @@ import qqwing from 'qqwing'
 
 export const MAX_PUZZLE_NUMBER = 9_999_999_999
 
+// Beyond Evil deals from a pre-generated bank (see scripts/make-beyond-bank.mjs):
+// an Evil that additionally forces a row/column hidden pair within the first 3
+// placements. Acceptance is ~1 in 2,500 candidates - far too slow to generate
+// live on a phone. Bank order IS the numbering; count must match the bank file.
+export const BEYOND_COUNT = 300
+
+export const maxPuzzleNumber = (level) => (level === 'beyond' ? BEYOND_COUNT : MAX_PUZZLE_NUMBER)
+
 const LEVEL_SALT = { easy: 1, medium: 2, hard: 3, expert: 4 }
 
 // mulberry32: tiny 32-bit PRNG, deterministic across JS engines
@@ -105,6 +113,17 @@ function tryGenerate(level, wantPairs) {
 // consume (or pollute) the deterministic sequence; yielding between batches
 // keeps the UI responsive on slow devices.
 export async function generatePuzzle(level, number) {
+  if (level === 'beyond') {
+    // dynamic import so the bank ships as its own precached chunk, loaded on
+    // first Beyond Evil deal rather than bloating the main bundle
+    const { default: bank } = await import('./beyond-bank.js')
+    const givens = parseGrid(bank[(number - 1) % bank.length])
+    const qq = new qqwing()
+    qq.setPrintStyle(qqwing.PrintStyle.ONE_LINE)
+    qq.setPuzzle(givens)
+    qq.solve()
+    return { givens, solution: parseGrid(qq.getSolutionString()) }
+  }
   const rng = mulberry32(seedFor(level, number))
   // 40% of Hard numbers demand a pair-technique puzzle (live site: ~1/3, so
   // the clone skews harder); drawn from the seeded rng so it's baked into the

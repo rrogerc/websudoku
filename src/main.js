@@ -1,5 +1,5 @@
 import './style.css'
-import { generatePuzzle, MAX_PUZZLE_NUMBER } from './generator.js'
+import { generatePuzzle, maxPuzzleNumber } from './generator.js'
 import { registerSW } from 'virtual:pwa-register'
 
 registerSW({ immediate: true })
@@ -9,6 +9,7 @@ const LEVELS = [
   { key: 'medium', label: 'Medium' },
   { key: 'hard', label: 'Hard' },
   { key: 'expert', label: 'Evil' },
+  { key: 'beyond', label: 'Beyond Evil' },
 ]
 
 // Message texts lifted from the original page's JS variables (m_d, m_c, m_m, m_w, m_i)
@@ -325,7 +326,7 @@ function setBoardOnly(on) {
 
 let generating = false
 
-async function newPuzzle(level, number = 1 + Math.floor(Math.random() * MAX_PUZZLE_NUMBER)) {
+async function newPuzzle(level, number = 1 + Math.floor(Math.random() * maxPuzzleNumber(level))) {
   if (generating) return
   generating = true
   setMessage('Selecting a puzzle&hellip;')
@@ -375,7 +376,7 @@ function saveGame() {
 
 function restoreGame(saved) {
   game.level = saved.level
-  game.number = saved.number || 1 + Math.floor(Math.random() * MAX_PUZZLE_NUMBER)
+  game.number = saved.number || 1 + Math.floor(Math.random() * maxPuzzleNumber(saved.level))
   game.givens = [...saved.givens].map(Number)
   game.solution = [...saved.solution].map(Number)
   // migrate pre-mini-grid saves, where pencil marks were multi-digit entries
@@ -558,7 +559,7 @@ function confirmDialog(text, onOk) {
 function selectPuzzleDialog() {
   showOverlay(
     `<p><b>Select a puzzle</b></p>
-     <p class="small">Enter a puzzle number from 1 to ${MAX_PUZZLE_NUMBER.toLocaleString('en-US')}</p>
+     <p class="small">Enter a puzzle number from 1 to ${maxPuzzleNumber(game.level).toLocaleString('en-US')}</p>
      <p><input type="text" id="dlg-number" inputmode="numeric" size="14"></p>
      <div class="dialog-buttons">
        <input type="button" id="dlg-cancel" value="Cancel">
@@ -572,7 +573,7 @@ function selectPuzzleDialog() {
   field.select()
   const submit = () => {
     const n = Number(field.value.replace(/[^0-9]/g, ''))
-    if (n < 1 || n > MAX_PUZZLE_NUMBER) return
+    if (n < 1 || n > maxPuzzleNumber(game.level)) return
     hideOverlay()
     newPuzzle(game.level, n)
   }
