@@ -171,6 +171,7 @@ html.board-only #focus-exit {display:block;}
 html.board-only, html.board-only body {overflow:hidden; overscroll-behavior:none;}
 html.board-only #left-column,
 html.board-only .thin-row,
+html.board-only #message-p,
 html.board-only #info-p,
 html.board-only #buttons-p,
 html.board-only .if-left-hidden-row {display:none;}
