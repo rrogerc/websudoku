@@ -22,7 +22,7 @@
         <table id="stats-table" class="tm"></table>
       </td></tr>
       <tr><td valign="bottom" align="center">
-        <p class="tm"><a href="https://www.websudoku.com/" target="_blank" rel="noreferrer">websudoku.com</a> | <a href="#" class="reset-stats">Reset stats</a></p>
+        <p class="tm"><a href="#" class="options-link">Options</a></p>
       </td></tr>
     </tbody></table>
   </td>
@@ -31,7 +31,7 @@
     <table class="col-table"><tbody>
       <tr class="thin-row"><td align="right" style="padding-bottom:1em;">
         <span style="float:left; margin-right:2em;" class="if-left-hidden-span level-links"></span>
-        <b><a href="#" id="focus-link" title="Hide everything but the board">Just the puzzle</a></b> | <b><a href="#" id="theme-link">Theme: Auto</a></b>
+        <b><a href="#" id="focus-link" title="Hide everything but the board">Just the puzzle</a></b>
       </td></tr>
       <tr valign="middle"><td align="center">
         <p class="bigbig" id="message-p" style="margin-top:1em; margin-bottom:1em;"><span id="message"></span></p>
@@ -42,31 +42,33 @@
         </div>
         <p style="margin-top:1.5em; margin-bottom:0;" id="info-p"><span class="halfbig"><b id="puzzle-label"></b> <span id="timer-line">-<span id="timer"></span>-</span> <a href="#" id="select-link">Select a puzzle...</a></span></p>
         <p style="margin-top:1em;" id="buttons-p">
-          <input type="button" class="bs" id="check-btn" value="How am I doing?"><input type="button" class="bs" id="pause-btn" value="Pause"><input type="button" class="bs" id="clear-btn" value="Clear"><input type="button" class="bs" id="options-btn" value="Options...">
+          <input type="button" class="bs" id="check-btn" value="How am I doing?"><input type="button" class="bs" id="pause-btn" value="Pause"><input type="button" class="bs" id="clear-btn" value="Clear">
         </p>
-        <details id="options" class="tm">
-          <summary>Options</summary>
-          <label>Theme: <select id="opt-theme"><option value="light">Light</option><option value="dark">Dark</option><option value="auto">Auto (match system)</option></select></label>
-          <label><input type="checkbox" id="opt-timer"> Show timer</label>
-          <label><input type="checkbox" id="opt-pencilmarks"> Allow pencil marks</label>
-          <label><input type="checkbox" id="opt-highlight"> Highlight mistakes when checking</label>
-          <label><input type="checkbox" id="opt-check"> Highlight mistakes as I type</label>
-          <label><input type="checkbox" id="opt-blindpace"> Hide the timer until solved</label>
-          <label><input type="checkbox" id="opt-glints"> Shimmer when a row, column or box is completed</label>
-          <label><input type="checkbox" id="opt-sound"> Sound effects</label>
-          <label><input type="checkbox" id="opt-keypad"> Show number keypad</label>
-          <label><input type="checkbox" id="opt-pencil"> Keypad enters pencil marks</label>
-          <p class="small" style="margin-top:0.75em;">Keyboard: Arrows / WASD move &middot; 1&ndash;9 enter &middot; hold Space (or Shift) + 1&ndash;9 toggle a pencil mark &middot; Backspace clears &middot; Enter checks &middot; Esc hides the selection, movement keys bring it back &middot; F = just the puzzle</p>
-        </details>
       </td></tr>
       <tr class="thin-row if-left-hidden-row"><td align="center" style="padding-top:1em;">
-        <a href="https://www.websudoku.com/" target="_blank" rel="noreferrer">websudoku.com</a> – <a href="#" class="reset-stats">Reset stats</a>
+        <a href="#" class="options-link">Options</a>
       </td></tr>
     </tbody></table>
   </td>
 </tr></tbody></table>
 
 <div id="overlay"><div id="overlay-inner"></div></div>
+
+<div id="options-modal"><div id="options">
+  <p style="margin-top:0;"><b>Options</b></p>
+  <label>Theme: <select id="opt-theme"><option value="light">Light</option><option value="dark">Dark</option><option value="auto">Auto (match system)</option></select></label>
+  <label><input type="checkbox" id="opt-timer"> Show timer</label>
+  <label><input type="checkbox" id="opt-pencilmarks"> Allow pencil marks</label>
+  <label><input type="checkbox" id="opt-highlight"> Highlight mistakes when checking</label>
+  <label><input type="checkbox" id="opt-check"> Highlight mistakes as I type</label>
+  <label><input type="checkbox" id="opt-blindpace"> Hide the timer until solved</label>
+  <label><input type="checkbox" id="opt-glints"> Shimmer when a row, column or box is completed</label>
+  <label><input type="checkbox" id="opt-sound"> Sound effects</label>
+  <label><input type="checkbox" id="opt-keypad"> Show number keypad</label>
+  <label><input type="checkbox" id="opt-pencil"> Keypad enters pencil marks</label>
+  <p class="small" style="margin-top:0.75em;">Keyboard: Arrows / WASD move &middot; 1&ndash;9 enter &middot; hold Space (or Shift) + 1&ndash;9 toggle a pencil mark &middot; Backspace clears &middot; Enter checks &middot; Esc hides the selection, movement keys bring it back &middot; F = just the puzzle</p>
+  <div class="dialog-buttons" style="margin-right:0;"><a href="#" class="reset-stats" style="float:left;">Reset stats</a><input type="button" id="options-close" value="Close"></div>
+</div></div>
 <a href="#" id="focus-exit" title="Show everything">&#10005;</a>
 
 <noscript>This Sudoku needs JavaScript.</noscript>

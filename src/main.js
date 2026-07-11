@@ -59,9 +59,9 @@ const settings = Object.assign(
   },
   readStore('websudoku:settings', {})
 )
-// pre-auto settings stored a boolean; keep whatever those installs showed
+// pre-auto settings stored a boolean; those installs restart on auto
 if (typeof settings.darkTheme === 'boolean') {
-  settings.theme = settings.darkTheme ? 'dark' : 'light'
+  settings.theme = 'auto'
   delete settings.darkTheme
 }
 
@@ -337,7 +337,7 @@ function buildGrid() {
     if (e.metaKey || e.ctrlKey || e.altKey) return
     if (MOVE_KEYS[e.key.toLowerCase()] === undefined) return
     if (gridHasFocus()) return // the grid handler owns movement
-    if ($('overlay').classList.contains('shown')) return
+    if ($('overlay').classList.contains('shown') || optionsShown()) return
     const t = e.target
     if (t instanceof HTMLElement && (t.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName))) return
     e.preventDefault()
@@ -725,6 +725,13 @@ function showOverlay(html, dialog = false) {
 
 const hideOverlay = () => $('overlay').classList.remove('shown')
 
+// Options menu: a modal (like the dialogs), opened from the "Options" link in
+// the sidebar footer (or its mobile stand-in row). Controls live in static
+// markup so wireOptions/applySettings keep their ids whether it's open or not.
+const showOptions = () => $('options-modal').classList.add('shown')
+const hideOptions = () => $('options-modal').classList.remove('shown')
+const optionsShown = () => $('options-modal').classList.contains('shown')
+
 // Styled like the original's in-page confirm box (c_div)
 function confirmDialog(text, onOk) {
   showOverlay(
@@ -847,13 +854,6 @@ function applySettings() {
   document.documentElement.classList.toggle('board-only', !!settings.boardOnly)
   // status/title bar matches the page background (values from --page-bg)
   document.querySelector('meta[name="theme-color"]').content = isDark() ? '#111114' : '#F9F9FF'
-  // the link shows the current mode; clicking cycles light -> dark -> auto
-  $('theme-link').textContent = { light: 'Theme: Light', dark: 'Theme: Dark', auto: 'Theme: Auto' }[settings.theme]
-  $('theme-link').title = {
-    light: 'Click to switch to dark',
-    dark: 'Click to switch to auto (match the system)',
-    auto: 'Click to switch to light',
-  }[settings.theme]
   $('opt-theme').value = settings.theme
   $('opt-timer').checked = settings.showTimer
   $('opt-pencilmarks').checked = settings.allowPencilMarks
@@ -910,19 +910,13 @@ $('pause-btn').addEventListener('click', () => (game.paused ? resumeGame() : pau
 $('clear-btn').addEventListener('click', () => {
   if (!game.done) confirmDialog('Are you sure you want to clear the puzzle?', clearPuzzle)
 })
-$('options-btn').addEventListener('click', () => {
-  const d = $('options')
-  d.open = !d.open
+$('options-close').addEventListener('click', hideOptions)
+$('options-modal').addEventListener('click', (e) => {
+  if (e.target === $('options-modal')) hideOptions() // backdrop click closes
 })
 $('select-link').addEventListener('click', (e) => {
   e.preventDefault()
   selectPuzzleDialog()
-})
-$('theme-link').addEventListener('click', (e) => {
-  e.preventDefault()
-  settings.theme = { light: 'dark', dark: 'auto', auto: 'light' }[settings.theme] || 'auto'
-  writeStore('websudoku:settings', settings)
-  applySettings()
 })
 // in auto, follow the OS theme live (flip at sunset, etc.)
 systemDark.addEventListener('change', () => {
@@ -939,8 +933,10 @@ $('focus-exit').addEventListener('click', (e) => {
 // F toggles board-only mode even when no cell is selected (the grid handler
 // covers focused cells; dialogs and other fields are excluded here)
 document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') hideOptions()
   if (e.metaKey || e.ctrlKey || e.altKey) return
   if (e.key !== 'f' && e.key !== 'F') return
+  if (optionsShown()) return
   const t = e.target
   if (t instanceof HTMLElement && (t.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName))) return
   e.preventDefault()
@@ -952,8 +948,13 @@ document.body.addEventListener('click', (e) => {
     e.preventDefault()
     newPuzzle(level)
   }
+  if (e.target.closest('a.options-link')) {
+    e.preventDefault()
+    showOptions()
+  }
   if (e.target.closest('a.reset-stats')) {
     e.preventDefault()
+    hideOptions() // the confirm lives in #overlay, which sits under the options modal
     confirmDialog('Reset all statistics?', () => {
       stats = Object.fromEntries(LEVELS.map((l) => [l.key, { wins: 0, fastest: null }]))
       recordLevel = null

@@ -91,7 +91,7 @@ a:hover {text-decoration:underline;}
 
 /* --- touch behavior: no double-tap zoom, no long-press callout/selection magnifier --- */
 
-body, a, label, summary, input, .tk, .t td {touch-action:manipulation;}
+body, a, label, input, select, .tk, .t td {touch-action:manipulation;}
 .t, #side_keys {-webkit-touch-callout:none; -webkit-user-select:none; user-select:none;}
 
 /* --- message line --- */
@@ -173,7 +173,6 @@ html.board-only #left-column,
 html.board-only .thin-row,
 html.board-only #info-p,
 html.board-only #buttons-p,
-html.board-only #options,
 html.board-only .if-left-hidden-row {display:none;}
 
 /* --- side keypad --- */
@@ -192,7 +191,11 @@ html.board-only .if-left-hidden-row {display:none;}
 /* --- controls, options --- */
 
 .bs {margin-left:0.1em; margin-right:0.1em;}
-#options summary {cursor:pointer;}
+
+/* options menu: modal like the dialogs, opened from the sidebar-footer link */
+#options-modal {z-index:3; background-color:var(--overlay-bg); position:fixed; inset:0; display:none; align-items:center; justify-content:center;}
+#options-modal.shown {display:flex;}
+#options {background-color:var(--board-bg); border-radius:8px; box-shadow: rgba(0, 0, 0, 0.25) 0px 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px; text-align:left; padding:1em 1.25em; width:26em; max-width:85%; box-sizing:border-box; max-height:85vh; overflow-y:auto; font-size:115%;}
 #options label {display:block; margin:0.4em 0;}
 #options select {font:inherit;}
 #stats-table {border-collapse:collapse; margin-left:auto; margin-right:auto;}
@@ -297,7 +300,7 @@ html.board-only .if-left-hidden-row {display:none;}
 /* --- print: just the grid, black borders like the original print pages --- */
 
 @media print {
-    #left-column, .thin-row, #message-p, #buttons-p, #options, #side_keys, #overlay {display:none !important;}
+    #left-column, .thin-row, #message-p, #buttons-p, #options-modal, #side_keys, #overlay {display:none !important;}
     body {background:#fff;}
     .left-bordered {border-right:none;}
     .t {border:2px solid #000;}
