@@ -337,7 +337,7 @@ function buildGrid() {
     if (e.metaKey || e.ctrlKey || e.altKey) return
     if (MOVE_KEYS[e.key.toLowerCase()] === undefined) return
     if (gridHasFocus()) return // the grid handler owns movement
-    if ($('overlay').classList.contains('shown') || optionsShown()) return
+    if (menuShown() || $('overlay').classList.contains('shown') || optionsShown()) return
     const t = e.target
     if (t instanceof HTMLElement && (t.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName))) return
     e.preventDefault()
@@ -460,6 +460,55 @@ function setBoardOnly(on) {
   applySettings()
 }
 
+/* ---------- menu / game states ---------- */
+
+const menuShown = () => document.documentElement.classList.contains('menu')
+
+function showMenu() {
+  if (generating) return // mid-deal: the new puzzle would land behind a stale menu
+  if (game.runningSince != null) {
+    game.elapsedBase = currentElapsed() // freeze the clock while on the menu
+    game.runningSince = null
+  }
+  clearInterval(tickId)
+  hideOverlay() // #overlay is top-level and would otherwise sit over the menu
+  document.documentElement.classList.remove('board-only') // visual only; settings.boardOnly survives for the next game
+  saveGame()
+  renderContinue()
+  renderStats()
+  document.documentElement.classList.add('menu')
+}
+
+function showGame() {
+  document.documentElement.classList.remove('menu')
+  document.documentElement.classList.toggle('board-only', !!settings.boardOnly)
+  if (game.paused) {
+    showPausedUI() // resuming stays an explicit click, like a reload mid-pause
+  } else if (!game.done) {
+    game.runningSince = performance.now()
+    startTicking()
+    saveGame()
+  }
+}
+
+function renderContinue() {
+  const row = $('continue-row')
+  if (game.givens.length !== 81 || game.done) {
+    row.innerHTML = ''
+    row.style.display = 'none'
+    return
+  }
+  const label = LEVELS.find((l) => l.key === game.level).label
+  const time = settings.blindPace ? '–:–' : fmt(currentElapsed())
+  row.style.display = ''
+  row.innerHTML = `<a href="#" id="continue-link"><b>Continue</b> &mdash; ${label} Puzzle ${game.number.toLocaleString('en-US')} &middot; ${time}</a>`
+  $('continue-link').addEventListener('click', (e) => {
+    e.preventDefault()
+    if (generating) return // a fresh deal is about to replace this game
+    showGame()
+  })
+}
+
 /* ---------- puzzles ---------- */
 
 let generating = false
@@ -468,11 +517,13 @@ async function newPuzzle(level, number = 1 + Math.floor(Math.random() * maxPuzzl
   if (generating) return
   generating = true
   setMessage('Selecting a puzzle&hellip;')
+  $('menu-msg').textContent = 'Selecting a puzzle…' // dealing from the menu: feedback lives there
   let puzzle
   try {
     puzzle = await generatePuzzle(level, number)
   } finally {
     generating = false
+    $('menu-msg').textContent = ''
   }
   selected = -1 // fresh puzzle: movement keys start the selection at the center
   game.level = level
@@ -496,13 +547,17 @@ async function newPuzzle(level, number = 1 + Math.floor(Math.random() * maxPuzzl
   $('pause-btn').value = 'Pause'
   $('puzzle_grid').style.visibility = ''
   paintAll()
-  renderTabs()
   renderInfo()
   startTicking()
   saveGame()
+  // only leave the menu once the new board is painted — dealing straight into
+  // the game state briefly showed the previous (or empty) board on slow deals
+  document.documentElement.classList.remove('menu')
+  document.documentElement.classList.toggle('board-only', !!settings.boardOnly)
 }
 
 function saveGame() {
+  if (game.givens.length !== 81) return // nothing dealt yet (menu boot) — don't clobber a real save
   writeStore('websudoku:game', {
     level: game.level,
     number: game.number,
@@ -541,18 +596,13 @@ function restoreGame(saved) {
   game.done = !!saved.done
   game.paused = !!saved.paused && !game.done
   game.elapsedBase = saved.elapsed || 0
-  game.runningSince = game.paused || game.done ? null : performance.now()
+  // restore always lands behind the menu's Continue row, clock frozen;
+  // showGame() restarts it (re-showing the Paused overlay for a paused save)
+  game.runningSince = null
   setMessage(MSG_DEAL)
   paintAll()
-  renderTabs()
   renderInfo()
-  startTicking()
-  if (game.paused) {
-    $('pause-btn').value = 'Resume'
-    $('puzzle_grid').style.visibility = 'hidden'
-    showOverlay('<div class="bigbig">Paused</div><p class="small">Click anywhere to resume</p>')
-  }
-  if (game.done) setMessage('Puzzle solved — start a new one!', 'green')
+  renderTimer()
 }
 
 function clearPuzzle() {
@@ -588,14 +638,18 @@ function renderTimer() {
   $('timer').textContent = masked ? ' –:– ' : ` ${fmt(currentElapsed())} `
 }
 
+function showPausedUI() {
+  $('pause-btn').value = 'Resume'
+  $('puzzle_grid').style.visibility = 'hidden'
+  showOverlay('<div class="bigbig">Paused</div><p class="small">Click anywhere to resume</p>')
+}
+
 function pauseGame() {
   if (game.done || game.paused) return
   game.elapsedBase = currentElapsed()
   game.runningSince = null
   game.paused = true
-  $('pause-btn').value = 'Resume'
-  $('puzzle_grid').style.visibility = 'hidden'
-  showOverlay('<div class="bigbig">Paused</div><p class="small">Click anywhere to resume</p>')
+  showPausedUI()
   saveGame()
 }
 
@@ -680,9 +734,10 @@ function win() {
     `<div class="bigbig">Congratulations!</div>
      <p>You solved this ${label} puzzle in <b>${time}</b>.</p>
      ${winReveal(prevBest, record)}
-     <p><input type="button" id="overlay-new" value="New Puzzle"></p>`
+     <p><input type="button" id="overlay-new" value="New Puzzle"> <input type="button" id="overlay-menu" value="Menu"></p>`
   )
   $('overlay-new').addEventListener('click', () => newPuzzle(game.level))
+  $('overlay-menu').addEventListener('click', showMenu) // only path to another level now
   saveGame()
 }
 
@@ -784,13 +839,6 @@ function setMessage(text, color = null) {
   $('message').innerHTML = color ? `<span class="msg-${color}"><b>${text}</b></span>` : `<b>${text}</b>`
 }
 
-function renderTabs() {
-  const html = LEVELS.map(({ key, label }) =>
-    key === game.level ? `<b>${label}</b>` : `<a href="#" data-level="${key}"><b>${label}</b></a>`
-  ).join(' &nbsp; ')
-  for (const el of document.querySelectorAll('.level-links')) el.innerHTML = html
-}
-
 function renderInfo() {
   const label = LEVELS.find((l) => l.key === game.level).label
   $('puzzle-label').textContent = `${label} Puzzle ${game.number.toLocaleString('en-US')}`
@@ -851,7 +899,8 @@ function buildKeys() {
 function applySettings() {
   document.documentElement.dataset.theme = isDark() ? 'dark' : 'light'
   document.documentElement.classList.toggle('no-keypad', !settings.showKeypad)
-  document.documentElement.classList.toggle('board-only', !!settings.boardOnly)
+  // board-only is a game-state mode; never let a settings change apply it over the menu
+  document.documentElement.classList.toggle('board-only', !!settings.boardOnly && !menuShown())
   // status/title bar matches the page background (values from --page-bg)
   document.querySelector('meta[name="theme-color"]').content = isDark() ? '#111114' : '#F9F9FF'
   $('opt-theme').value = settings.theme
@@ -926,6 +975,10 @@ $('focus-link').addEventListener('click', (e) => {
   e.preventDefault()
   setBoardOnly(true)
 })
+$('menu-link').addEventListener('click', (e) => {
+  e.preventDefault()
+  showMenu()
+})
 $('focus-exit').addEventListener('click', (e) => {
   e.preventDefault()
   setBoardOnly(false)
@@ -936,7 +989,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') hideOptions()
   if (e.metaKey || e.ctrlKey || e.altKey) return
   if (e.key !== 'f' && e.key !== 'F') return
-  if (optionsShown()) return
+  if (menuShown() || optionsShown()) return
   const t = e.target
   if (t instanceof HTMLElement && (t.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName))) return
   e.preventDefault()
@@ -946,7 +999,7 @@ document.body.addEventListener('click', (e) => {
   const level = e.target.closest('a[data-level]')?.dataset.level
   if (level) {
     e.preventDefault()
-    newPuzzle(level)
+    newPuzzle(level) // stays on the menu until the deal is ready; newPuzzle swaps states
   }
   if (e.target.closest('a.options-link')) {
     e.preventDefault()
@@ -970,10 +1023,13 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden) saveGame()
 })
 
+// Boot lands on the menu. An unfinished save restores silently behind its
+// Continue row; a finished (or absent) save just leaves the menu bare — the
+// first deal happens on a level click. Stats from a done game were already
+// persisted at win time.
 const saved = readStore('websudoku:game', null)
-if (saved && typeof saved.givens === 'string' && saved.givens.length === 81 && Array.isArray(saved.entries)) {
+if (saved && typeof saved.givens === 'string' && saved.givens.length === 81 && Array.isArray(saved.entries) && !saved.done) {
   restoreGame(saved)
-} else {
-  newPuzzle('easy')
 }
 applySettings()
+showMenu()

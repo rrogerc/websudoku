@@ -75,12 +75,25 @@ body,table,td,input,select {font-size:12px;}
 #layout {width:100%; height:100%; border-spacing:0; padding-left:env(safe-area-inset-left, 0px); padding-right:env(safe-area-inset-right, 0px);}
 .col-table {width:100%; height:100%; border-spacing:0;}
 .thin-row {height:1px;}
-#left-column {width:248px; padding:16px;}
-.left-bordered {border-right:1px var(--rule) solid;}
 #right-column {padding:16px;}
 #logo {margin:1.5em 0;}
 html[data-theme="dark"] #logo img {filter:invert(0.88);} /* logo is grayscale-on-white; invert for dark theme */
-.if-left-hidden-span, .if-left-hidden-row {display:none;}
+
+/* --- start menu (html.menu): the app boots here; a level click swaps to the game --- */
+
+html.menu #layout {display:none;}
+html:not(.menu) #menu {display:none;}
+#menu {height:100%; box-sizing:border-box; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;
+       padding:16px env(safe-area-inset-right, 0px) calc(16px + env(safe-area-inset-bottom, 0px)) env(safe-area-inset-left, 0px);}
+/* level list echoes the grid: thick box border outside, thin cell rules inside */
+#menu-levels {border-collapse:collapse; border:2px solid var(--box-border); background-color:var(--board-bg);}
+#menu-levels td {border-top:1px solid var(--cell-border);}
+#menu-levels tr:first-child td {border-top:none;}
+#menu-levels a {display:block; width:11em; padding:0.6em 0; font-size:135%;}
+@media (hover:hover) {#menu-levels a:hover {background-color:var(--selected); text-decoration:none;}}
+#menu-levels a:active {background-color:var(--selected);}
+#menu-msg, #continue-row {margin:1.5em 0 0;}
+#menu-msg:empty, #continue-row:empty {display:none;}
 
 table,td {padding:0;}
 .stat {color:var(--stat); font-weight:bold; padding:0.25em 0.5em;}
@@ -169,12 +182,10 @@ html.board-only #focus-exit {display:block;}
 /* overflow lock: with the chrome hidden everything fits the viewport, so nothing scrolls
    or rubber-bands (overscroll-behavior needs iOS 16+) */
 html.board-only, html.board-only body {overflow:hidden; overscroll-behavior:none;}
-html.board-only #left-column,
 html.board-only .thin-row,
 html.board-only #message-p,
 html.board-only #info-p,
-html.board-only #buttons-p,
-html.board-only .if-left-hidden-row {display:none;}
+html.board-only #buttons-p {display:none;}
 
 /* --- side keypad --- */
 
@@ -219,9 +230,6 @@ html.board-only .if-left-hidden-row {display:none;}
 }
 
 @media (max-width: 740px) {
-    #left-column {display:none;}
-    .if-left-hidden-span {display:inline;}
-    .if-left-hidden-row {display:table-row;}
     #side_keys .tk {width:16pt; height:17pt;}
 }
 
@@ -301,9 +309,8 @@ html.board-only .if-left-hidden-row {display:none;}
 /* --- print: just the grid, black borders like the original print pages --- */
 
 @media print {
-    #left-column, .thin-row, #message-p, #buttons-p, #options-modal, #side_keys, #overlay {display:none !important;}
+    .thin-row, #message-p, #buttons-p, #options-modal, #side_keys, #overlay {display:none !important;}
     body {background:#fff;}
-    .left-bordered {border-right:none;}
     .t {border:2px solid #000;}
     .t td {border-color:#000 !important;}
     .t input {color:#000 !important; background-color:#fff !important;}

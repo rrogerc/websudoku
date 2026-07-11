@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="menu">
 <head>
   <meta charset="utf-8">
   <title>Web Sudoku</title>
@@ -13,24 +13,28 @@
 </head>
 <body>
 
-<table id="layout"><tbody><tr>
-  <td id="left-column" class="left-bordered">
-    <table class="col-table"><tbody>
-      <tr><td valign="top" align="center">
-        <div id="logo"><img src="/logo-240x240.png" width="120" height="120" alt="Web Sudoku"></div>
-        <p class="tm big level-links"></p>
-        <table id="stats-table" class="tm"></table>
-      </td></tr>
-      <tr><td valign="bottom" align="center">
-        <p class="tm"><a href="#" class="options-link">Options</a></p>
-      </td></tr>
-    </tbody></table>
-  </td>
+<!-- Start menu: the app boots here (html.menu); picking a level deals a puzzle
+     and swaps to the game layout. Level links reuse the a[data-level] delegation. -->
+<div id="menu">
+  <div id="logo"><img src="/logo-240x240.png" width="120" height="120" alt="Web Sudoku"></div>
+  <table id="menu-levels"><tbody>
+    <tr><td><a href="#" data-level="easy"><b>Easy</b></a></td></tr>
+    <tr><td><a href="#" data-level="medium"><b>Medium</b></a></td></tr>
+    <tr><td><a href="#" data-level="hard"><b>Hard</b></a></td></tr>
+    <tr><td><a href="#" data-level="expert"><b>Evil</b></a></td></tr>
+    <tr><td><a href="#" data-level="beyond"><b>Beyond Evil</b></a></td></tr>
+  </tbody></table>
+  <p id="menu-msg" class="halfbig"></p>
+  <p id="continue-row" class="halfbig"></p>
+  <table id="stats-table" class="tm"></table>
+  <p class="tm"><a href="#" class="options-link">Options</a></p>
+</div>
 
+<table id="layout"><tbody><tr>
   <td id="right-column">
     <table class="col-table"><tbody>
       <tr class="thin-row"><td align="right" style="padding-bottom:1em;">
-        <span style="float:left; margin-right:2em;" class="if-left-hidden-span level-links"></span>
+        <b><a href="#" id="menu-link" style="float:left; margin-right:2em;" title="Back to the menu">Menu</a></b>
         <b><a href="#" id="focus-link" title="Hide everything but the board">Just the puzzle</a></b>
       </td></tr>
       <tr valign="middle"><td align="center">
@@ -44,9 +48,6 @@
         <p style="margin-top:1em;" id="buttons-p">
           <input type="button" class="bs" id="check-btn" value="How am I doing?"><input type="button" class="bs" id="pause-btn" value="Pause"><input type="button" class="bs" id="clear-btn" value="Clear">
         </p>
-      </td></tr>
-      <tr class="thin-row if-left-hidden-row"><td align="center" style="padding-top:1em;">
-        <a href="#" class="options-link">Options</a>
       </td></tr>
     </tbody></table>
   </td>
