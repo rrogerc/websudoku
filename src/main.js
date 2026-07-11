@@ -1,5 +1,6 @@
 import './style.css'
 import { generatePuzzle, maxPuzzleNumber } from './generator.js'
+import * as sfx from './sound.js'
 import { registerSW } from 'virtual:pwa-register'
 
 registerSW({ immediate: true })
@@ -18,6 +19,17 @@ const MSG_CLEAR = 'Back to the start, we go!'
 const MSG_MISTAKES = 'You made some mistakes, highlighted in red!'
 const MSG_WRONG_COUNT = 'Something is not quite right in * of the cells!'
 const MSG_OK = 'Everything is OK, still * to go!'
+
+// --- Reward-prediction-error mechanics (see docs/rpe-notes.md) ---
+// A "glint": completing a row/column/box that is genuinely all-correct
+// sometimes reveals that fact with a brief shimmer. The reveal is probabilistic
+// (unpredictable per completion) and truth-gated (a glint always means those 9
+// cells are right), so it generates an information-prediction error rather than
+// a hollow token. Charmed houses are derived from the puzzle solution, so
+// they're fixed per puzzle number and can't be re-rolled by clearing.
+const GLINT_P = 0.4 // fraction of the 27 houses that can glint (~11/puzzle, ~0.4 felt hit-rate)
+const JACKPOT_P = 0.01 // of charmed houses, the rare few whose glint sweeps the board (~1 in 10 puzzles)
+const GLINT_DELAY = 180 // ms of anticipation between the completing keystroke and the reveal
 
 const $ = (id) => document.getElementById(id)
 
@@ -41,6 +53,9 @@ const settings = Object.assign(
     showKeypad: matchMedia('(pointer: coarse)').matches, // original only shows keys on touch
     keypadPencil: false,
     boardOnly: false, // "Just the puzzle" mode: chrome hidden, scroll locked
+    glints: true, // subtle shimmer on a completed row/column/box (the RPE mechanic)
+    blindPace: false, // hide the running timer, reveal it only on the win screen
+    sound: true, // synthesized sound effects (src/sound.js)
   },
   readStore('websudoku:settings', {})
 )
@@ -70,17 +85,130 @@ const game = {
   paused: false,
   elapsedBase: 0,
   runningSince: null,
+  charmed: [], // 27 houses (9 rows, 9 cols, 9 boxes): which are allowed to glint
+  jackpot: [], // of the charmed houses, which sweep the whole board
+  glinted: [], // charmed houses already revealed this puzzle (consume-once, anti-farm)
+  usedCheck: false, // pressed "How am I doing?" — gates the "solved blind" reveal
 }
 
 const inputs = []
 const tds = []
 const pmSpans = [] // per cell: 9 spans forming the 3x3 pencil-mark mini-grid
 const pms = []
+const glows = [] // per cell: the shimmer overlay div behind the digit
 let selected = -1
 let pencilMode = settings.keypadPencil
 let pencilKey = null
 let recordLevel = null
 let tickId = null
+
+/* ---------- reward mechanics: charmed houses & glints ---------- */
+
+// local mulberry32 (generator.js keeps its own; this one seeds the charmed set)
+function mulberry32(seed) {
+  return () => {
+    let t = (seed += 0x6d2b79f5)
+    t = Math.imul(t ^ (t >>> 15), t | 1)
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+const hashStr = (s) => {
+  let h = 0x811c9dc5 >>> 0
+  for (let k = 0; k < s.length; k++) h = Math.imul(h ^ s.charCodeAt(k), 0x01000193) >>> 0
+  return h >>> 0
+}
+
+// The 9 cell indices of house h: 0-8 rows, 9-17 columns, 18-26 boxes
+function houseCells(h) {
+  const cells = []
+  if (h < 9) for (let c = 0; c < 9; c++) cells.push(h * 9 + c)
+  else if (h < 18) for (let r = 0; r < 9; r++) cells.push(r * 9 + (h - 9))
+  else {
+    const b = h - 18
+    const br = Math.floor(b / 3) * 3
+    const bc = (b % 3) * 3
+    for (let dr = 0; dr < 3; dr++) for (let dc = 0; dc < 3; dc++) cells.push((br + dr) * 9 + bc + dc)
+  }
+  return cells
+}
+// The three houses (row, column, box) that contain cell i
+const housesOfCell = (i) => {
+  const r = Math.floor(i / 9)
+  const c = i % 9
+  return [r, 9 + c, 18 + Math.floor(r / 3) * 3 + Math.floor(c / 3)]
+}
+// Is every cell of house h filled with the correct digit? (givens count as correct)
+function houseCorrect(h) {
+  for (const j of houseCells(h)) {
+    if (game.givens[j] !== 0) continue
+    if (game.entries[j] === '' || +game.entries[j] !== game.solution[j]) return false
+  }
+  return true
+}
+// The charmed set is a deterministic function of the solution, so a given
+// puzzle number always has the same charmed houses (fits the numbering
+// contract), it survives reloads, and it can't be re-rolled by clearing cells.
+function deriveCharmed(solution) {
+  const rng = mulberry32(hashStr(solution))
+  const charmed = Array(27).fill(false)
+  const jackpot = Array(27).fill(false)
+  for (let h = 0; h < 27; h++) {
+    charmed[h] = rng() < GLINT_P
+    const jr = rng()
+    jackpot[h] = charmed[h] && jr < JACKPOT_P
+  }
+  return { charmed, jackpot }
+}
+
+// On a correct placement, glint any charmed house that just became complete.
+// glinted[] makes each house fire at most once per puzzle.
+function maybeGlint(i) {
+  if (!settings.glints) return
+  for (const h of housesOfCell(i)) {
+    if (!game.charmed[h] || game.glinted[h] || !houseCorrect(h)) continue
+    game.glinted[h] = true
+    // the short delay is a manufactured anticipation beat, not just latency
+    setTimeout(() => runGlint(h), GLINT_DELAY)
+  }
+}
+function runGlint(h) {
+  const cells = houseCells(h)
+  if (game.jackpot[h]) sfx.playJackpot()
+  else sfx.playGlint()
+  if (game.jackpot[h]) {
+    // rare board-wide sweep, rippling out from the completed house
+    let sr = 0
+    let sc = 0
+    for (const j of cells) {
+      sr += Math.floor(j / 9)
+      sc += j % 9
+    }
+    const cr = sr / 9
+    const cc = sc / 9
+    for (let j = 0; j < 81; j++) {
+      const d = Math.abs(Math.floor(j / 9) - cr) + Math.abs((j % 9) - cc)
+      animateGlow(j, Math.round(d * 30))
+    }
+  } else {
+    for (const j of cells) animateGlow(j)
+  }
+}
+function animateGlow(i, delay = 0) {
+  const g = glows[i]
+  g.style.animationDelay = delay ? `${delay}ms` : ''
+  g.classList.remove('on')
+  void g.offsetWidth // reflow so the animation retriggers on a repeat glint
+  g.classList.add('on')
+  g.addEventListener(
+    'animationend',
+    () => {
+      g.classList.remove('on')
+      g.style.animationDelay = ''
+    },
+    { once: true }
+  )
+}
 
 /* ---------- grid ---------- */
 
@@ -101,6 +229,9 @@ function buildGrid() {
       const i = row * 9 + col
       const td = tr.insertCell()
       td.id = `c${col}${row}` // original ids are column-first
+      const glow = document.createElement('div') // shimmer overlay, behind the digit
+      glow.className = 'glow'
+      td.appendChild(glow)
       const input = document.createElement('input')
       input.type = 'text'
       input.id = `f${col}${row}`
@@ -125,6 +256,7 @@ function buildGrid() {
       inputs.push(input)
       pms.push(pm)
       pmSpans.push(spans)
+      glows.push(glow)
     }
   }
 
@@ -264,16 +396,21 @@ function setEntry(i, v) {
   if (v !== '') game.marks[i] = '' // an answer replaces the cell's pencil marks
   game.err[i] = settings.checkAsYouType && v !== '' && +v !== game.solution[i] ? 1 : 0
   paint(i)
+  if (v !== '') sfx.playPlace(+v) // pitch tracks the digit, not correctness — no leak
+  else sfx.playClear()
+  if (v !== '' && +v === game.solution[i]) maybeGlint(i) // before saveGame so glinted persists
   saveGame()
   maybeComplete()
 }
 
 function clearCell(i) {
   if (game.done || game.givens[i] !== 0) return
+  const had = game.entries[i] !== '' || game.marks[i] !== ''
   game.entries[i] = ''
   game.marks[i] = ''
   game.err[i] = 0
   paint(i)
+  if (had) sfx.playClear() // stay quiet when clearing an already-empty cell
   saveGame()
 }
 
@@ -307,6 +444,7 @@ function togglePencilDigit(i, digit) {
     : [...(current + digit)].sort().join('')
   game.err[i] = 0
   paint(i)
+  sfx.playPencil()
   saveGame()
 }
 
@@ -341,6 +479,11 @@ async function newPuzzle(level, number = 1 + Math.floor(Math.random() * maxPuzzl
   game.number = number
   game.givens = puzzle.givens
   game.solution = puzzle.solution
+  const charm = deriveCharmed(puzzle.solution.join(''))
+  game.charmed = charm.charmed
+  game.jackpot = charm.jackpot
+  game.glinted = Array(27).fill(false)
+  game.usedCheck = false
   game.entries = Array(81).fill('')
   game.marks = Array(81).fill('')
   game.err = Array(81).fill(0)
@@ -368,6 +511,8 @@ function saveGame() {
     entries: game.entries,
     marks: game.marks,
     err: game.err,
+    glinted: game.glinted,
+    usedCheck: game.usedCheck,
     elapsed: currentElapsed(),
     paused: game.paused,
     done: game.done,
@@ -385,6 +530,14 @@ function restoreGame(saved) {
     ? saved.marks
     : saved.entries.map((v) => (v && v.length > 1 ? v : ''))
   game.err = saved.err
+  const charm = deriveCharmed(game.solution.join(''))
+  game.charmed = charm.charmed
+  game.jackpot = charm.jackpot
+  // keep houses already glinted, and suppress any already solved on load, so a
+  // reload never fires a fresh reward and a solved house can't be re-glinted
+  const savedGlinted = Array.isArray(saved.glinted) ? saved.glinted : []
+  game.glinted = Array.from({ length: 27 }, (_, h) => !!savedGlinted[h] || (game.charmed[h] && houseCorrect(h)))
+  game.usedCheck = !!saved.usedCheck
   game.done = !!saved.done
   game.paused = !!saved.paused && !game.done
   game.elapsedBase = saved.elapsed || 0
@@ -430,7 +583,9 @@ function startTicking() {
 
 function renderTimer() {
   $('timer-line').style.display = settings.showTimer ? '' : 'none'
-  $('timer').textContent = ` ${fmt(currentElapsed())} `
+  // blind pace: the whole solve is one anticipation interval; reveal only at the win
+  const masked = settings.blindPace && !game.done
+  $('timer').textContent = masked ? ' –:– ' : ` ${fmt(currentElapsed())} `
 }
 
 function pauseGame() {
@@ -461,6 +616,7 @@ function check() {
     setMessage('Already solved — start a new puzzle!', 'green')
     return
   }
+  game.usedCheck = true // leaning on the check button forfeits the "solved blind" reveal
   let wrong = 0
   let remaining = 0
   for (let i = 0; i < 81; i++) {
@@ -477,6 +633,7 @@ function check() {
     }
   }
   if (wrong) {
+    sfx.playError()
     if (settings.highlightWrong) setMessage(MSG_MISTAKES, 'red')
     else setMessage(MSG_WRONG_COUNT.replace('*', wrong), 'purple')
   } else if (remaining) {
@@ -505,14 +662,16 @@ function win() {
   renderTimer()
 
   const st = stats[game.level]
+  const prevBest = st.fastest
   st.wins++
-  const record = st.fastest == null || game.elapsedBase < st.fastest
+  const record = prevBest == null || game.elapsedBase < prevBest
   if (record) {
     st.fastest = game.elapsedBase
     recordLevel = game.level
   }
   writeStore('websudoku:stats', stats)
   renderStats()
+  sfx.playWin(record)
 
   const label = LEVELS.find((l) => l.key === game.level).label
   const time = fmt(game.elapsedBase)
@@ -520,11 +679,39 @@ function win() {
   showOverlay(
     `<div class="bigbig">Congratulations!</div>
      <p>You solved this ${label} puzzle in <b>${time}</b>.</p>
-     ${record ? '<p><span class="stat fastest">New personal best!</span></p>' : ''}
+     ${winReveal(prevBest, record)}
      <p><input type="button" id="overlay-new" value="New Puzzle"></p>`
   )
   $('overlay-new').addEventListener('click', () => newPuzzle(game.level))
   saveGame()
+}
+
+// The variable-magnitude payout: one true, unpredictable-until-now line about
+// how this solve stacks up. Personal bests and near-misses both carry real
+// information (you keep stats), so this feeds the mastery drive instead of
+// bolting an arbitrary token onto it. The near-miss is the potent case.
+function winReveal(prevBest, record) {
+  const label = LEVELS.find((l) => l.key === game.level).label
+  const lines = []
+  if (record && prevBest != null) {
+    lines.push(`<span class="stat fastest">New personal best — ${fmtDelta(prevBest - game.elapsedBase)} under your old ${fmt(prevBest)}!</span>`)
+  } else if (record) {
+    lines.push('<span class="stat fastest">New personal best!</span>')
+  } else {
+    const off = game.elapsedBase - prevBest
+    if (off <= 30000) lines.push(`So close — just ${fmtDelta(off)} off your best of ${fmt(prevBest)}.`)
+    else lines.push(`Your best ${label} time is still ${fmt(prevBest)}.`)
+  }
+  // the rare, unpredictable jackpot line: solved without ever asking for help
+  if (!game.usedCheck && !settings.checkAsYouType) {
+    lines.push('<span class="stat fastest">Solved blind — you never checked once.</span>')
+  }
+  return lines.map((l) => `<p>${l}</p>`).join('')
+}
+const fmtDelta = (ms) => {
+  if (ms >= 60000) return fmt(ms)
+  const n = Math.max(1, Math.round(ms / 1000))
+  return `${n} second${n === 1 ? '' : 's'}`
 }
 
 /* ---------- overlay & dialogs ---------- */
@@ -672,6 +859,10 @@ function applySettings() {
   $('opt-pencilmarks').checked = settings.allowPencilMarks
   $('opt-highlight').checked = settings.highlightWrong
   $('opt-check').checked = settings.checkAsYouType
+  $('opt-blindpace').checked = settings.blindPace
+  $('opt-glints').checked = settings.glints
+  $('opt-sound').checked = settings.sound
+  sfx.setSoundEnabled(settings.sound)
   $('opt-keypad').checked = settings.showKeypad
   $('side_keys').classList.toggle('hidden', !settings.showKeypad)
   renderTimer()
@@ -695,6 +886,9 @@ function wireOptions() {
   bind('opt-pencilmarks', 'allowPencilMarks')
   bind('opt-highlight', 'highlightWrong')
   bind('opt-check', 'checkAsYouType')
+  bind('opt-blindpace', 'blindPace')
+  bind('opt-glints', 'glints')
+  bind('opt-sound', 'sound')
   bind('opt-keypad', 'showKeypad')
   $('opt-pencil').addEventListener('change', (e) => {
     settings.keypadPencil = e.target.checked

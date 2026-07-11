@@ -26,6 +26,7 @@
   --stat: #990000;
   --fastest-bg: #FFFF66;
   --selected: #EEF1FF;
+  --glint: #666699;
   --overlay-bg: rgba(0, 0, 0, 0.8);
   --msg-green: green;
   --msg-red: red;
@@ -51,6 +52,7 @@ html[data-theme="dark"] {
   --stat: #ff7b7b;
   --fastest-bg: #5c5410;
   --selected: #262c49;
+  --glint: #8d8df0;
   --overlay-bg: rgba(0, 0, 0, 0.85);
   --msg-green: #7ec97e;
   --msg-red: #ff8080;
@@ -150,6 +152,17 @@ body, a, label, summary, input, .tk, .t td {touch-action:manipulation;}
 
 .t td {position:relative;}
 .pm {position:absolute; inset:0; display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); place-items:center; pointer-events:none; font-family:"lucida handwriting","comic sans ms",sans-serif; color:var(--pencil); font-size:8px; line-height:1;}
+
+/* --- completion glint (reward-prediction-error shimmer; see docs/rpe-notes.md) ---
+   overlay div appended before the input, so it pulses behind the digit; a full
+   className repaint of the td never touches it */
+.glow {position:absolute; inset:0; pointer-events:none; opacity:0; background:var(--glint);}
+@keyframes glint {0% {opacity:0;} 25% {opacity:0.4;} 100% {opacity:0;}}
+.glow.on {animation:glint 0.6s ease-out;}
+@media (prefers-reduced-motion: reduce) {
+  @keyframes glint {0% {opacity:0;} 40% {opacity:0.3;} 100% {opacity:0;}}
+  .glow.on {animation-duration:0.9s;}
+}
 
 /* --- "Just the puzzle" (board-only) mode: message + grid (+ keypad on touch), nothing else --- */
 
