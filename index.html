@@ -13,6 +13,10 @@
 </head>
 <body>
 
+<!-- Ambient background (Options, game-only): generative city-drive canvas,
+     or /ambient.mp4 if a video is dropped in public/ -->
+<div id="ambient" aria-hidden="true"><canvas id="ambient-canvas"></canvas><div class="scrim"></div></div>
+
 <!-- Start menu: the app boots here (html.menu); picking a level deals a puzzle
      and swaps to the game layout. Level links reuse the a[data-level] delegation. -->
 <div id="menu">
@@ -90,6 +94,8 @@
       <option value="ember">Ember (night)</option>
     </select></label>
   </div>
+  <label><input type="checkbox" id="opt-ambient"> Ambient background while playing</label>
+  <label id="ambient-yt-row" title="Paste a YouTube link to use it as the background when online; leave empty for the built-in scene">YouTube link: <input type="text" id="opt-ambient-yt" size="20" placeholder="optional"></label>
   <label><input type="checkbox" id="opt-timer"> Show timer</label>
   <label><input type="checkbox" id="opt-pencilmarks"> Allow pencil marks</label>
   <label><input type="checkbox" id="opt-highlight"> Highlight mistakes when checking</label>

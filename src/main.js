@@ -1,6 +1,7 @@
 import './style.css'
 import { generatePuzzle, maxPuzzleNumber } from './generator.js'
 import * as sfx from './sound.js'
+import * as ambient from './ambient.js'
 import { registerSW } from 'virtual:pwa-register'
 
 registerSW({ immediate: true })
@@ -58,6 +59,8 @@ const settings = Object.assign(
     glints: true, // subtle shimmer on a completed row/column/box (the RPE mechanic)
     blindPace: false, // hide the running timer, reveal it only on the win screen
     sound: true, // synthesized sound effects (src/sound.js)
+    ambient: false, // generative city-drive canvas (or /ambient.mp4) behind the game
+    ambientYouTube: '', // 11-char YouTube id; outranks canvas/mp4 while online
   },
   readStore('websudoku:settings', {})
 )
@@ -76,6 +79,7 @@ if (settings.theme !== 'auto' && !LIGHT_THEMES.includes(settings.theme) && !DARK
 }
 if (!LIGHT_THEMES.includes(settings.autoLight)) settings.autoLight = 'light'
 if (!DARK_THEMES.includes(settings.autoDark)) settings.autoDark = 'dark'
+if (typeof settings.ambientYouTube !== 'string') settings.ambientYouTube = ''
 
 const systemDark = matchMedia('(prefers-color-scheme: dark)')
 // auto follows the OS between a chosen day/night pair (classic pair by default);
@@ -482,6 +486,8 @@ function setBoardOnly(on) {
 /* ---------- menu / game states ---------- */
 
 const menuShown = () => document.documentElement.classList.contains('menu')
+// game-only: the engine stops on the menu (CSS hides it there too)
+const syncAmbient = () => ambient.setActive(!!settings.ambient && !menuShown())
 
 function showMenu() {
   if (generating) return // mid-deal: the new puzzle would land behind a stale menu
@@ -496,11 +502,13 @@ function showMenu() {
   renderContinue()
   renderStats()
   document.documentElement.classList.add('menu')
+  syncAmbient()
 }
 
 function showGame() {
   document.documentElement.classList.remove('menu')
   document.documentElement.classList.toggle('board-only', !!settings.boardOnly)
+  syncAmbient()
   if (game.paused) {
     showPausedUI() // resuming stays an explicit click, like a reload mid-pause
   } else if (!game.done) {
@@ -573,6 +581,7 @@ async function newPuzzle(level, number = 1 + Math.floor(Math.random() * maxPuzzl
   // the game state briefly showed the previous (or empty) board on slow deals
   document.documentElement.classList.remove('menu')
   document.documentElement.classList.toggle('board-only', !!settings.boardOnly)
+  syncAmbient()
 }
 
 function saveGame() {
@@ -938,6 +947,12 @@ function applySettings() {
   sfx.setSoundEnabled(settings.sound)
   $('opt-keypad').checked = settings.showKeypad
   $('side_keys').classList.toggle('hidden', !settings.showKeypad)
+  $('opt-ambient').checked = settings.ambient
+  $('opt-ambient-yt').value = settings.ambientYouTube
+  $('ambient-yt-row').classList.toggle('shown', !!settings.ambient)
+  document.documentElement.classList.toggle('ambient', !!settings.ambient)
+  ambient.setSource(settings.ambientYouTube)
+  syncAmbient() // also retints the scene when the theme changes
   renderTimer()
 }
 
@@ -970,6 +985,13 @@ function wireOptions() {
   bind('opt-blindpace', 'blindPace')
   bind('opt-glints', 'glints')
   bind('opt-sound', 'sound')
+  bind('opt-ambient', 'ambient')
+  // any pasted YouTube URL shape normalizes to the bare id (or clears if unparseable)
+  $('opt-ambient-yt').addEventListener('change', (e) => {
+    settings.ambientYouTube = ambient.parseYouTubeId(e.target.value)
+    e.target.value = settings.ambientYouTube
+    save()
+  })
   bind('opt-keypad', 'showKeypad')
   $('opt-pencil').addEventListener('change', (e) => {
     settings.keypadPencil = e.target.checked

@@ -249,6 +249,17 @@ a:hover {text-decoration:underline;}
 body, a, label, input, select, .tk, .t td {touch-action:manipulation;}
 .t, #side_keys {-webkit-touch-callout:none; -webkit-user-select:none; user-select:none;}
 
+/* --- ambient background (game only; the menu keeps the plain page) --- */
+
+#ambient {position:fixed; inset:0; z-index:-1; display:none; pointer-events:none;}
+html.ambient:not(.menu) #ambient {display:block;}
+#ambient canvas, #ambient video {display:block; width:100%; height:100%; object-fit:cover;}
+/* YouTube embed: 16:9 cover sizing, oversized ~30% so the title bar and
+   watermark crop outside the viewport; clicks pass through */
+#ambient iframe {position:absolute; top:50%; left:50%; width:max(100vw, 177.78vh); height:max(100vh, 56.25vw); transform:translate(-50%, -50%) scale(1.3); border:0; pointer-events:none;}
+/* page-bg scrim mutes the scene so the chrome text stays readable over it */
+#ambient .scrim {position:absolute; inset:0; background:color-mix(in srgb, var(--page-bg) 55%, transparent);}
+
 /* --- message line --- */
 
 .msg-green {color:var(--msg-green);}
@@ -354,6 +365,10 @@ html.board-only #buttons-p {display:none;}
 /* day/night sub-selects, only meaningful while the theme is Auto */
 #auto-themes {display:none;}
 #auto-themes.shown {display:block; margin-left:1.25em;}
+/* YouTube field, only meaningful while ambient is on */
+#ambient-yt-row {display:none;}
+#ambient-yt-row.shown {display:block; margin-left:1.25em;}
+#options input[type="text"] {font:inherit;}
 #options select {font:inherit;}
 #stats-table {border-collapse:collapse; margin-left:auto; margin-right:auto;}
 
@@ -413,6 +428,7 @@ html.board-only #buttons-p {display:none;}
 @media (pointer: coarse) {
     #overlay-inner.dialog input[type="text"] {font-size:16px;} /* below 16px, iOS auto-zooms the page on focus */
     #options select {font-size:16px;} /* same iOS auto-zoom rule applies to selects */
+    #options input[type="text"] {font-size:16px;}
 }
 
 @media (min-width:950px) and (min-height:720px) { /* One step up from default */
@@ -454,7 +470,7 @@ html.board-only #buttons-p {display:none;}
 /* --- print: just the grid, black borders like the original print pages --- */
 
 @media print {
-    .thin-row, #message-p, #buttons-p, #options-modal, #side_keys, #overlay {display:none !important;}
+    .thin-row, #message-p, #buttons-p, #options-modal, #side_keys, #overlay, #ambient {display:none !important;}
     body {background:#fff;}
     .t {border:2px solid #000;}
     .t td {border-color:#000 !important;}
