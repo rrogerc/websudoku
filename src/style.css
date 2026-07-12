@@ -351,6 +351,9 @@ html.board-only #buttons-p {display:none;}
 #options-modal.shown {display:flex;}
 #options {background-color:var(--board-bg); border-radius:8px; box-shadow: rgba(0, 0, 0, 0.25) 0px 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px; text-align:left; padding:1em 1.25em; width:26em; max-width:85%; box-sizing:border-box; max-height:85vh; overflow-y:auto; font-size:115%;}
 #options label {display:block; margin:0.4em 0;}
+/* day/night sub-selects, only meaningful while the theme is Auto */
+#auto-themes {display:none;}
+#auto-themes.shown {display:block; margin-left:1.25em;}
 #options select {font:inherit;}
 #stats-table {border-collapse:collapse; margin-left:auto; margin-right:auto;}
 

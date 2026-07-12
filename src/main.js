@@ -46,6 +46,8 @@ const writeStore = (key, value) => localStorage.setItem(key, JSON.stringify(valu
 const settings = Object.assign(
   {
     theme: 'auto', // 'light' | 'dark' | 'auto' (follow the system)
+    autoLight: 'light', // theme auto resolves to when the system is light
+    autoDark: 'dark', // theme auto resolves to when the system is dark
     showTimer: true,
     allowPencilMarks: true,
     highlightWrong: true,
@@ -72,10 +74,14 @@ const DARK_THEMES = ['dark', 'midnight', 'forest', 'ember']
 if (settings.theme !== 'auto' && !LIGHT_THEMES.includes(settings.theme) && !DARK_THEMES.includes(settings.theme)) {
   settings.theme = 'auto' // a removed/renamed theme key falls back to auto
 }
+if (!LIGHT_THEMES.includes(settings.autoLight)) settings.autoLight = 'light'
+if (!DARK_THEMES.includes(settings.autoDark)) settings.autoDark = 'dark'
 
 const systemDark = matchMedia('(prefers-color-scheme: dark)')
-// auto follows the OS between the two classic themes; anything else is literal
-const resolvedTheme = () => (settings.theme === 'auto' ? (systemDark.matches ? 'dark' : 'light') : settings.theme)
+// auto follows the OS between a chosen day/night pair (classic pair by default);
+// anything else is literal
+const resolvedTheme = () =>
+  settings.theme === 'auto' ? (systemDark.matches ? settings.autoDark : settings.autoLight) : settings.theme
 
 let stats = Object.assign(
   Object.fromEntries(LEVELS.map((l) => [l.key, { wins: 0, fastest: null }])),
@@ -919,6 +925,9 @@ function applySettings() {
   document.querySelector('meta[name="theme-color"]').content =
     getComputedStyle(document.documentElement).getPropertyValue('--page-bg').trim()
   $('opt-theme').value = settings.theme
+  $('opt-auto-light').value = settings.autoLight
+  $('opt-auto-dark').value = settings.autoDark
+  $('auto-themes').classList.toggle('shown', settings.theme === 'auto')
   $('opt-timer').checked = settings.showTimer
   $('opt-pencilmarks').checked = settings.allowPencilMarks
   $('opt-highlight').checked = settings.highlightWrong
@@ -944,6 +953,14 @@ function wireOptions() {
     })
   $('opt-theme').addEventListener('change', (e) => {
     settings.theme = e.target.value
+    save()
+  })
+  $('opt-auto-light').addEventListener('change', (e) => {
+    settings.autoLight = e.target.value
+    save()
+  })
+  $('opt-auto-dark').addEventListener('change', (e) => {
+    settings.autoDark = e.target.value
     save()
   })
   bind('opt-timer', 'showTimer')
