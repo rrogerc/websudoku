@@ -65,8 +65,17 @@ if (typeof settings.darkTheme === 'boolean') {
   delete settings.darkTheme
 }
 
+// Theme keys must match the html[data-theme=...] blocks in style.css;
+// DARK_THEMES also mirrors the :is() dark-family selector lists there.
+const LIGHT_THEMES = ['light', 'sage', 'sky', 'sepia', 'lavender', 'blush']
+const DARK_THEMES = ['dark', 'midnight', 'forest', 'ember']
+if (settings.theme !== 'auto' && !LIGHT_THEMES.includes(settings.theme) && !DARK_THEMES.includes(settings.theme)) {
+  settings.theme = 'auto' // a removed/renamed theme key falls back to auto
+}
+
 const systemDark = matchMedia('(prefers-color-scheme: dark)')
-const isDark = () => settings.theme === 'dark' || (settings.theme === 'auto' && systemDark.matches)
+// auto follows the OS between the two classic themes; anything else is literal
+const resolvedTheme = () => (settings.theme === 'auto' ? (systemDark.matches ? 'dark' : 'light') : settings.theme)
 
 let stats = Object.assign(
   Object.fromEntries(LEVELS.map((l) => [l.key, { wins: 0, fastest: null }])),
@@ -897,12 +906,14 @@ function buildKeys() {
 /* ---------- options ---------- */
 
 function applySettings() {
-  document.documentElement.dataset.theme = isDark() ? 'dark' : 'light'
+  document.documentElement.dataset.theme = resolvedTheme()
   document.documentElement.classList.toggle('no-keypad', !settings.showKeypad)
   // board-only is a game-state mode; never let a settings change apply it over the menu
   document.documentElement.classList.toggle('board-only', !!settings.boardOnly && !menuShown())
-  // status/title bar matches the page background (values from --page-bg)
-  document.querySelector('meta[name="theme-color"]').content = isDark() ? '#111114' : '#F9F9FF'
+  // status/title bar matches the page background; read it from the theme block
+  // so every theme stays in sync without a duplicate color map here
+  document.querySelector('meta[name="theme-color"]').content =
+    getComputedStyle(document.documentElement).getPropertyValue('--page-bg').trim()
   $('opt-theme').value = settings.theme
   $('opt-timer').checked = settings.showTimer
   $('opt-pencilmarks').checked = settings.allowPencilMarks

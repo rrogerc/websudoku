@@ -57,7 +57,23 @@
 
 <div id="options-modal"><div id="options">
   <p style="margin-top:0;"><b>Options</b></p>
-  <label>Theme: <select id="opt-theme"><option value="light">Light</option><option value="dark">Dark</option><option value="auto">Auto (match system)</option></select></label>
+  <label>Theme: <select id="opt-theme">
+    <option value="auto">Auto (match system)</option>
+    <optgroup label="Light">
+      <option value="light">Classic Light</option>
+      <option value="sage">Sage</option>
+      <option value="sky">Sky</option>
+      <option value="sepia">Sepia</option>
+      <option value="lavender">Lavender</option>
+      <option value="blush">Blush</option>
+    </optgroup>
+    <optgroup label="Dark">
+      <option value="dark">Classic Dark</option>
+      <option value="midnight">Midnight</option>
+      <option value="forest">Forest</option>
+      <option value="ember">Ember (night)</option>
+    </optgroup>
+  </select></label>
   <label><input type="checkbox" id="opt-timer"> Show timer</label>
   <label><input type="checkbox" id="opt-pencilmarks"> Allow pencil marks</label>
   <label><input type="checkbox" id="opt-highlight"> Highlight mistakes when checking</label>

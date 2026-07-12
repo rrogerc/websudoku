@@ -34,7 +34,10 @@
   --msg-blue: blue;
 }
 
-html[data-theme="dark"] {
+/* Dark family: "dark" (classic) is the shared base; midnight/forest/ember
+   override the tint vars below. Keep the :is() list in sync with DARK_THEMES
+   in main.js and the #logo invert rule further down. */
+html:is([data-theme="dark"], [data-theme="midnight"], [data-theme="forest"], [data-theme="ember"]) {
   color-scheme: dark;
   --page-bg: #111114;
   --text: #c8c8cc;
@@ -60,6 +63,144 @@ html[data-theme="dark"] {
   --msg-blue: #82aaff;
 }
 
+/* --- extra themes (see docs/theme-notes.md for the research behind them) ---
+   Light themes: very pale, low-saturation tints (lightness ≈ 93-95%,
+   saturation ≤ ~30%) — brightness drives pleasantness, saturation drives
+   arousal, so soothing = bright + barely tinted. Hues from the preferred
+   families: green, blue, cream, violet, blush. All digit/board pairs were
+   WCAG-checked (givens ≥ 13:1, entries ≥ 5:1, pencils ≥ 4.4:1). */
+
+html[data-theme="sage"] { /* pale desaturated green */
+  --page-bg: #EAF1E9;
+  --text: #232B23;
+  --link: #2E7D32;
+  --board-bg: #F7FAF5;
+  --cell-border: #D3DFD2;
+  --box-border: #5C7A60;
+  --given: #1C241C;
+  --entry: #4E5FC8;
+  --pencil: #2F7D3B;
+  --selected: #DCE9DB;
+  --glint: #5C7A60;
+}
+
+html[data-theme="sky"] { /* pale desaturated blue — the best-supported calm hue */
+  --page-bg: #E8EDF2;
+  --text: #212933;
+  --link: #2C63A8;
+  --board-bg: #F5F8FB;
+  --cell-border: #CEDAE6;
+  --box-border: #5B7A99;
+  --given: #1B2430;
+  --entry: #4A5FC8;
+  --pencil: #2E7D4F;
+  --selected: #DBE6F0;
+  --glint: #5B7A99;
+}
+
+html[data-theme="sepia"] { /* warm cream: the Kindle/Solarized/Gruvbox reading-plane cluster */
+  --page-bg: #F3ECDA;
+  --text: #3B3226;
+  --link: #96562B;
+  --board-bg: #FAF5E8;
+  --cell-border: #E0D5BC;
+  --box-border: #8A7350;
+  --given: #33281B;
+  --entry: #4E5FC0;
+  --pencil: #4E7D3B;
+  --selected: #EDE3C8;
+  --glint: #8A7350;
+}
+
+html[data-theme="lavender"] { /* muted violet */
+  --page-bg: #ECE9F4;
+  --text: #262238;
+  --link: #6247B8;
+  --board-bg: #F7F5FB;
+  --cell-border: #DAD4E8;
+  --box-border: #7A6FA8;
+  --given: #241F33;
+  --entry: #5B4FBE;
+  --pencil: #3E7D4F;
+  --selected: #E2DCEF;
+  --glint: #7A6FA8;
+}
+
+html[data-theme="blush"] { /* pale rose */
+  --page-bg: #F5EAE8;
+  --text: #302326;
+  --link: #9E4A63;
+  --board-bg: #FBF5F3;
+  --cell-border: #E8D5D1;
+  --box-border: #A87070;
+  --given: #33201D;
+  --entry: #5058C8;
+  --pencil: #4E7D4A;
+  --selected: #F0DDD9;
+  --glint: #A87070;
+}
+
+/* Dark variants: near-black low-chroma surfaces (never #000 — halation/OLED
+   smear), off-white givens (never #FFF), entries lightened to keep ≥ 7:1. */
+
+html[data-theme="midnight"] { /* deep navy */
+  --page-bg: #141B2C;
+  --text: #C4CAD8;
+  --link: #8FA8F0;
+  --rule: #454F68;
+  --board-bg: #1C2436;
+  --cell-border: #303C56;
+  --box-border: #6F82B8;
+  --given: #E8EAF2;
+  --entry: #8FB0F0;
+  --pencil: #6FBF8A;
+  --selected: #2A3652;
+  --glint: #8FB0F0;
+  --stat: #FF8A8A;
+}
+
+html[data-theme="forest"] { /* deep green */
+  --page-bg: #121A15;
+  --text: #C2CEC5;
+  --link: #86C9A0;
+  --rule: #3A4A40;
+  --board-bg: #1A241D;
+  --cell-border: #2E4034;
+  --box-border: #5F8A6E;
+  --given: #E6EFE8;
+  --entry: #8FB4E8;
+  --pencil: #7CC98F;
+  --selected: #24352A;
+  --glint: #7CC98F;
+  --stat: #FF8A7B;
+}
+
+html[data-theme="ember"] { /* warm near-black night theme: blue-depleted all the
+  way down to the entry digits (short wavelengths are what suppress melatonin
+  in the evening — pair with a dimmed screen; warm tint alone isn't enough) */
+  --page-bg: #191412;
+  --text: #D0C4B4;
+  --link: #D89A6A;
+  --rule: #4A3E33;
+  --board-bg: #221B17;
+  --cell-border: #3E322A;
+  --box-border: #8A6A4A;
+  --given: #EFE2D0;
+  --entry: #E8A85C;
+  --pencil: #9EB69B;
+  --selected: #33281F;
+  --glint: #E8A85C;
+  --err1: #4A2318;
+  --err2: #6B2A18;
+  --err3: #92371E;
+  --stat: #FF9A6A;
+  --fastest-bg: #5C4A10;
+  --msg-green: #A8C98A;
+  --msg-red: #FF9A80;
+  --msg-purple: #D8A8C0;
+  --msg-blue: #C9B87A;
+}
+
 html {-webkit-text-size-adjust:100%; text-size-adjust:100%;} /* no iOS font inflation in landscape */
 html, body {height:100%;}
 body {margin:0; background-color:var(--page-bg);}
@@ -77,7 +218,8 @@ body,table,td,input,select {font-size:12px;}
 .thin-row {height:1px;}
 #right-column {padding:16px;}
 #logo {margin:1.5em 0;}
-html[data-theme="dark"] #logo img {filter:invert(0.88);} /* logo is grayscale-on-white; invert for dark theme */
+/* logo is grayscale-on-white; invert for the dark-family themes */
+html:is([data-theme="dark"], [data-theme="midnight"], [data-theme="forest"], [data-theme="ember"]) #logo img {filter:invert(0.88);}
 
 /* --- start menu (html.menu): the app boots here; a level click swaps to the game --- */
 
