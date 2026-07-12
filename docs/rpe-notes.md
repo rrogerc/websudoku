@@ -106,6 +106,10 @@ a chime landing *with* the glint beats either alone.
   feedback, deliberately kept out of the placement path so not-checking keeps its
   purity (placement never sounds different for a wrong digit).
 - **Pencil / clear** — distinct softer ticks so the two input modes feel apart.
+- **Movement** — a footstep-style tap while navigating with WASD/arrows: a soft
+  lowpassed noise burst + low thump, alternating two "feet" so a run of moves
+  makes a rhythm rather than a machine-gun repeat. Quietest of all, since it's
+  the most frequent action (fires only on an in-bounds move, never on a wall).
 
 Master gain is ~0.25 (quiet by default). One toggle, `settings.sound` (on).
 

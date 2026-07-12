@@ -10,6 +10,7 @@
 
 let ctx = null
 let master = null
+let noiseBuf = null // short noise burst reused for footstep taps
 let enabled = true
 
 export function setSoundEnabled(on) {
@@ -29,6 +30,19 @@ function ensure() {
     master = ctx.createGain()
     master.gain.value = 0.25 // keep the whole thing quiet and tasteful
     master.connect(ctx.destination)
+    // one-time noise burst for footstep taps; deterministic xorshift fill so we
+    // never touch Math.random (the generator swaps it during puzzle grading)
+    const len = Math.floor(ctx.sampleRate * 0.1)
+    noiseBuf = ctx.createBuffer(1, len, ctx.sampleRate)
+    const data = noiseBuf.getChannelData(0)
+    let s = 0x9e3779b9 >>> 0
+    for (let k = 0; k < len; k++) {
+      s ^= s << 13
+      s ^= s >>> 17
+      s ^= s << 5
+      s >>>= 0
+      data[k] = (s / 4294967296) * 2 - 1
+    }
   }
   if (ctx.state === 'suspended') ctx.resume()
   return ctx
@@ -65,7 +79,7 @@ const digitFreq = (d) => C4 * 2 ** (PENTA[(d - 1) % 9] / 12)
 
 export function playPlace(digit) {
   if (!ensure()) return
-  note(digitFreq(digit), 0, 0.12, { type: 'triangle', gain: 0.45, attack: 0.004 })
+  note(digitFreq(digit), 0, 0.12, { type: 'triangle', gain: 0.34, attack: 0.004 })
 }
 export function playPencil() {
   if (!ensure()) return
@@ -74,6 +88,36 @@ export function playPencil() {
 export function playClear() {
   if (!ensure()) return
   note(196, 0, 0.09, { type: 'triangle', gain: 0.3 }) // low thunk
+}
+// footstep tap while navigating with WASD/arrows: a soft lowpassed noise burst
+// plus a low thump, alternating two "feet" so a run of moves makes a rhythm
+// rather than a machine-gun repeat. Quiet — it's the most frequent sound.
+let stepFoot = 0
+export function playStep() {
+  if (!ensure()) return
+  stepFoot ^= 1
+  const t0 = ctx.currentTime
+  const src = ctx.createBufferSource()
+  src.buffer = noiseBuf
+  src.playbackRate.value = stepFoot ? 1 : 0.85
+  const lp = ctx.createBiquadFilter()
+  lp.type = 'lowpass'
+  lp.frequency.value = stepFoot ? 900 : 760
+  const g = ctx.createGain()
+  g.gain.setValueAtTime(0.0001, t0)
+  g.gain.exponentialRampToValueAtTime(0.16, t0 + 0.004)
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.06)
+  src.connect(lp)
+  lp.connect(g)
+  g.connect(master)
+  src.start(t0)
+  src.stop(t0 + 0.09)
+  src.onended = () => {
+    src.disconnect()
+    lp.disconnect()
+    g.disconnect()
+  }
+  note(stepFoot ? 128 : 108, 0, 0.05, { type: 'sine', gain: 0.09 }) // low body
 }
 
 // --- the reward moments: salient, synchronized with their visuals ---

@@ -329,7 +329,10 @@ function buildGrid() {
       const col = i % 9
       const inBounds =
         delta === -9 ? row > 0 : delta === 9 ? row < 8 : delta === -1 ? col > 0 : col < 8
-      if (inBounds) inputs[i + delta].focus()
+      if (inBounds) {
+        inputs[i + delta].focus()
+        sfx.playStep() // footstep-style tap on each move
+      }
     }
   })
 
@@ -351,6 +354,7 @@ function buildGrid() {
     if (t instanceof HTMLElement && (t.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName))) return
     e.preventDefault()
     inputs[selected >= 0 ? selected : 40].focus()
+    sfx.playStep()
   })
 }
 
