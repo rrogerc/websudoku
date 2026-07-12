@@ -57,6 +57,10 @@
   </td>
 </tr></tbody></table>
 
+<!-- Thumb pad (touchControls = 'thumbpad'): a mini-map of the board and a 3x3
+     digit pad sharing one bottom-right footprint; panels built in src/thumbpad.js -->
+<div id="thumbpad"><div id="tp-map"></div><div id="tp-pad"></div></div>
+
 <div id="overlay"><div id="overlay-inner"></div></div>
 
 <div id="options-modal"><div id="options">
@@ -103,8 +107,12 @@
   <label><input type="checkbox" id="opt-blindpace"> Hide the timer until solved</label>
   <label><input type="checkbox" id="opt-glints"> Shimmer when a row, column or box is completed</label>
   <label><input type="checkbox" id="opt-sound"> Sound effects</label>
-  <label><input type="checkbox" id="opt-keypad"> Show number keypad</label>
-  <label><input type="checkbox" id="opt-pencil"> Keypad enters pencil marks</label>
+  <label>Touch controls: <select id="opt-touch">
+    <option value="thumbpad">Thumb pad (board map + digits)</option>
+    <option value="keypad">Number keypad</option>
+    <option value="none">None</option>
+  </select></label>
+  <label id="pencil-row"><input type="checkbox" id="opt-pencil"> Keypad enters pencil marks</label>
   <p class="small" style="margin-top:0.75em;">Keyboard: Arrows / WASD move &middot; 1&ndash;9 enter &middot; hold Space (or Shift) + 1&ndash;9 toggle a pencil mark &middot; Backspace clears &middot; Enter checks &middot; Esc hides the selection, movement keys bring it back &middot; F = just the puzzle</p>
   <div class="dialog-buttons" style="margin-right:0;"><a href="#" class="reset-stats" style="float:left;">Reset stats</a><input type="button" id="options-close" value="Close"></div>
 </div></div>

@@ -353,6 +353,43 @@ html.board-only #buttons-p {display:none;}
 .tk:active {background-color:var(--selected);}
 .tk.active {background-color:var(--selected); font-weight:bold;}
 
+/* --- thumb pad (touchControls = 'thumbpad'): one-thumb controls, bottom-right --- */
+
+#thumbpad {--tp:min(46vw, 200px); position:fixed; right:max(10px, env(safe-area-inset-right, 0px)); bottom:max(10px, env(safe-area-inset-bottom, 0px)); z-index:1; width:var(--tp); display:none;
+           touch-action:none; -webkit-touch-callout:none; user-select:none; -webkit-user-select:none;}
+html.thumbpad:not(.menu) #thumbpad {display:block;}
+
+/* mini-map: live miniature of the board; drag on it to aim (the real board's
+   cell tracks the finger), lift to select */
+#tp-map {position:relative; display:grid; grid-template-columns:repeat(9, 1fr); grid-template-rows:repeat(9, 1fr); height:var(--tp); box-sizing:border-box; background-color:var(--board-bg); border:2px solid var(--box-border); cursor:pointer;}
+/* the thick 3x3 box lines, drawn as a four-gradient overlay */
+#tp-map::after {content:""; position:absolute; inset:0; pointer-events:none;
+  background-image:linear-gradient(var(--box-border), var(--box-border)), linear-gradient(var(--box-border), var(--box-border)), linear-gradient(var(--box-border), var(--box-border)), linear-gradient(var(--box-border), var(--box-border));
+  background-size:2px 100%, 2px 100%, 100% 2px, 100% 2px;
+  background-position:33.4% 0, 66.8% 0, 0 33.4%, 0 66.8%;
+  background-repeat:no-repeat;}
+.tp-cell {box-sizing:border-box; border:1px solid var(--cell-border); border-width:0 1px 1px 0; display:flex; align-items:center; justify-content:center; overflow:hidden; line-height:1;
+          font-size:calc(var(--tp) * 0.068); font-family:times,serif; color:var(--given);}
+.tp-cell.entry {font-family:"lucida handwriting","comic sans ms",sans-serif; font-size:calc(var(--tp) * 0.058); color:var(--entry);}
+.tp-cell.mk {color:var(--pencil); font-family:arial,sans-serif;} /* cells holding only pencil marks show a dot */
+.tp-cell.e1 {background-color:var(--err1);}
+.tp-cell.e2 {background-color:var(--err2);}
+.tp-cell.e3 {background-color:var(--err3);}
+.tp-cell.sel {background-color:var(--selected); box-shadow:inset 0 0 0 1px var(--box-border);}
+.tp-cell.aim, .t td.aim {outline:2px solid var(--box-border); outline-offset:-2px; background-color:var(--selected);}
+
+/* digit pad: swaps in after selecting an open cell; tap = entry (returns to
+   the map), long-press = pencil mark (stays) */
+#thumbpad.pad #tp-map {display:none;}
+#thumbpad:not(.pad) #tp-pad {display:none;}
+#tp-digits {display:grid; grid-template-columns:repeat(3, 1fr); gap:6px;}
+.tp-key {position:relative; box-sizing:border-box; display:flex; align-items:center; justify-content:center; height:calc((var(--tp) - 12px) / 3); background-color:var(--board-bg); border:1px solid var(--cell-border); font-size:calc(var(--tp) * 0.13); cursor:pointer;}
+.tp-key:active {background-color:var(--selected);}
+.tp-key.active {background-color:var(--selected); font-weight:bold;} /* the cell's current entry */
+.tp-key.marked::after {content:""; position:absolute; right:12%; bottom:10%; width:6px; height:6px; border-radius:50%; background-color:var(--pencil);} /* dot = penciled */
+#tp-actions {display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:6px;}
+#tp-actions .tp-key {height:calc(var(--tp) * 0.2); font-size:calc(var(--tp) * 0.1);}
+
 /* --- controls, options --- */
 
 .bs {margin-left:0.1em; margin-right:0.1em;}
@@ -368,6 +405,9 @@ html.board-only #buttons-p {display:none;}
 /* YouTube field, only meaningful while ambient is on */
 #ambient-yt-row {display:none;}
 #ambient-yt-row.shown {display:block; margin-left:1.25em;}
+/* keypad pencil toggle, only meaningful while the keypad is the touch control */
+#pencil-row {display:none;}
+#pencil-row.shown {display:block;}
 #options input[type="text"] {font:inherit;}
 #options select {font:inherit;}
 #stats-table {border-collapse:collapse; margin-left:auto; margin-right:auto;}
@@ -400,6 +440,9 @@ html.board-only #buttons-p {display:none;}
     /* bottom padding = keypad clearance so the fixed bar never covers the info line */
     #right-column {padding: max(8px, env(safe-area-inset-top, 0px)) 4px calc(126px + env(safe-area-inset-bottom, 0px));}
     html.no-keypad #right-column {padding-bottom:16px;}
+    /* thumb pad clearance instead (map footprint; the taller digit pad may
+       briefly overlap the buttons row while open — it always swaps right back) */
+    html.thumbpad #right-column {padding-bottom:calc(224px + env(safe-area-inset-bottom, 0px));}
 
     .c0,.c1,.c2,.c3,.e0,.e1,.e2,.e3,.f0,.f1,.f2,.f3,.g0,.g1,.g2,.g3,.h0,.h1,.h2,.h3,.i0,.i1,.i2,.i3 {width:var(--cell); height:var(--cell);} /* cells */
     .s0,.s1,.s2,.s3 {font-size:calc(var(--cell) * 0.73);} /* givens — ratios match the desktop breakpoints */
@@ -470,7 +513,7 @@ html.board-only #buttons-p {display:none;}
 /* --- print: just the grid, black borders like the original print pages --- */
 
 @media print {
-    .thin-row, #message-p, #buttons-p, #options-modal, #side_keys, #overlay, #ambient {display:none !important;}
+    .thin-row, #message-p, #buttons-p, #options-modal, #side_keys, #overlay, #ambient, #thumbpad {display:none !important;}
     body {background:#fff;}
     .t {border:2px solid #000;}
     .t td {border-color:#000 !important;}

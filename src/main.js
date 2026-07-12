@@ -2,6 +2,7 @@ import './style.css'
 import { generatePuzzle, maxPuzzleNumber } from './generator.js'
 import * as sfx from './sound.js'
 import * as ambient from './ambient.js'
+import * as thumb from './thumbpad.js'
 import { registerSW } from 'virtual:pwa-register'
 
 registerSW({ immediate: true })
@@ -44,6 +45,7 @@ function readStore(key, fallback) {
 }
 const writeStore = (key, value) => localStorage.setItem(key, JSON.stringify(value))
 
+const storedSettings = readStore('websudoku:settings', {})
 const settings = Object.assign(
   {
     theme: 'auto', // 'light' | 'dark' | 'auto' (follow the system)
@@ -53,7 +55,7 @@ const settings = Object.assign(
     allowPencilMarks: true,
     highlightWrong: true,
     checkAsYouType: false,
-    showKeypad: matchMedia('(pointer: coarse)').matches, // original only shows keys on touch
+    touchControls: matchMedia('(pointer: coarse)').matches ? 'thumbpad' : 'none', // 'thumbpad' | 'keypad' | 'none'
     keypadPencil: false,
     boardOnly: false, // "Just the puzzle" mode: chrome hidden, scroll locked
     glints: true, // subtle shimmer on a completed row/column/box (the RPE mechanic)
@@ -62,13 +64,24 @@ const settings = Object.assign(
     ambient: false, // generative city-drive canvas (or /ambient.mp4) behind the game
     ambientYouTube: '', // 11-char YouTube id; outranks canvas/mp4 while online
   },
-  readStore('websudoku:settings', {})
+  storedSettings
 )
 // pre-auto settings stored a boolean; those installs restart on auto
 if (typeof settings.darkTheme === 'boolean') {
   settings.theme = 'auto'
   delete settings.darkTheme
 }
+// pre-thumb-pad settings stored a keypad boolean: keypad-on-touch installs move
+// to the thumb pad (the new default touch control), keypad-on-desktop keeps it
+if (!('touchControls' in storedSettings) && typeof settings.showKeypad === 'boolean') {
+  settings.touchControls = !settings.showKeypad
+    ? 'none'
+    : matchMedia('(pointer: coarse)').matches
+      ? 'thumbpad'
+      : 'keypad'
+}
+delete settings.showKeypad
+if (!['thumbpad', 'keypad', 'none'].includes(settings.touchControls)) settings.touchControls = 'none'
 
 // Theme keys must match the html[data-theme=...] blocks in style.css;
 // DARK_THEMES also mirrors the :is() dark-family selector lists there.
@@ -261,6 +274,7 @@ function buildGrid() {
       input.setAttribute('inputmode', 'none') // side keys on touch, like the original
       input.addEventListener('focus', () => {
         selected = i
+        thumb.setSelected(i) // the thumb pad's mini-map mirrors the selection
         input.select()
       })
       input.addEventListener('input', () => onCellInput(i))
@@ -399,6 +413,7 @@ function paint(i) {
   const marks = given || value !== '' ? '' : game.marks[i]
   pms[i].style.display = marks ? '' : 'none'
   for (let d = 1; d <= 9; d++) pmSpans[i][d - 1].textContent = marks.includes(d) ? d : ''
+  thumb.paintCell(i) // keep the thumb pad's mini-map in sync
 }
 
 function paintAll() {
@@ -475,6 +490,14 @@ function setPencilMode(on) {
   pencilMode = on
   pencilKey.classList.toggle('active', on)
   $('opt-pencil').checked = on
+}
+
+// thumb pad guard: applyKey's fragile-focus dance, minus the pencilMode logic —
+// the pad's own gestures decide entry vs mark (tap vs long-press)
+function thumbTarget() {
+  if (game.done || selected < 0 || game.givens[selected] !== 0) return false
+  if (!gridHasFocus()) inputs[selected].focus()
+  return true
 }
 
 function setBoardOnly(on) {
@@ -574,6 +597,7 @@ async function newPuzzle(level, number = 1 + Math.floor(Math.random() * maxPuzzl
   $('pause-btn').value = 'Pause'
   $('puzzle_grid').style.visibility = ''
   paintAll()
+  thumb.reset() // forget the old selection, land on the map panel
   renderInfo()
   startTicking()
   saveGame()
@@ -629,6 +653,7 @@ function restoreGame(saved) {
   game.runningSince = null
   setMessage(MSG_DEAL)
   paintAll()
+  thumb.reset()
   renderInfo()
   renderTimer()
 }
@@ -926,7 +951,8 @@ function buildKeys() {
 
 function applySettings() {
   document.documentElement.dataset.theme = resolvedTheme()
-  document.documentElement.classList.toggle('no-keypad', !settings.showKeypad)
+  document.documentElement.classList.toggle('no-keypad', settings.touchControls !== 'keypad')
+  document.documentElement.classList.toggle('thumbpad', settings.touchControls === 'thumbpad')
   // board-only is a game-state mode; never let a settings change apply it over the menu
   document.documentElement.classList.toggle('board-only', !!settings.boardOnly && !menuShown())
   // status/title bar matches the page background; read it from the theme block
@@ -945,8 +971,9 @@ function applySettings() {
   $('opt-glints').checked = settings.glints
   $('opt-sound').checked = settings.sound
   sfx.setSoundEnabled(settings.sound)
-  $('opt-keypad').checked = settings.showKeypad
-  $('side_keys').classList.toggle('hidden', !settings.showKeypad)
+  $('opt-touch').value = settings.touchControls
+  $('pencil-row').classList.toggle('shown', settings.touchControls === 'keypad')
+  $('side_keys').classList.toggle('hidden', settings.touchControls !== 'keypad')
   $('opt-ambient').checked = settings.ambient
   $('opt-ambient-yt').value = settings.ambientYouTube
   $('ambient-yt-row').classList.toggle('shown', !!settings.ambient)
@@ -992,7 +1019,10 @@ function wireOptions() {
     e.target.value = settings.ambientYouTube
     save()
   })
-  bind('opt-keypad', 'showKeypad')
+  $('opt-touch').addEventListener('change', (e) => {
+    settings.touchControls = e.target.value
+    save()
+  })
   $('opt-pencil').addEventListener('change', (e) => {
     settings.keypadPencil = e.target.checked
     setPencilMode(e.target.checked)
@@ -1004,6 +1034,25 @@ function wireOptions() {
 
 buildGrid()
 buildKeys()
+thumb.init({
+  getCell: (i) => ({
+    given: game.givens[i] !== 0,
+    value: game.givens[i] !== 0 ? String(game.givens[i]) : game.entries[i] || '',
+    marks: game.marks[i] || '',
+    err: game.err[i] || 0,
+  }),
+  aimBoard: (i, on) => tds[i].classList.toggle('aim', on),
+  select: (i) => inputs[i].focus(),
+  digit: (d) => {
+    if (thumbTarget()) setEntry(selected, game.entries[selected] === d ? '' : d)
+  },
+  mark: (d) => {
+    if (thumbTarget()) togglePencilDigit(selected, d)
+  },
+  clear: () => {
+    if (thumbTarget()) clearCell(selected)
+  },
+})
 wireOptions()
 setPencilMode(pencilMode)
 renderStats()
