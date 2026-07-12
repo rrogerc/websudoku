@@ -4,6 +4,7 @@ Personal recreation of [Web Sudoku](https://www.websudoku.com/) — same look an
 
 - Vite + vanilla JS, no framework
 - Puzzles generated client-side with [qqwing](https://www.npmjs.com/package/qqwing), graded into the four websudoku levels (Easy / Medium / Hard / Evil) by technique and givens count
+- Evil is built to NYT-Hard structure (calibrated against 1,155 archived NYT Hard puzzles): minimal asymmetric grids — every given load-bearing — with a tight opening and an uncapped pair-technique tail, but never guessing
 - Puzzle numbers are real: the number seeds the generator, so "Select a puzzle..." with the same number always deals the same puzzle
 - A fifth level, **Beyond Evil**: Evil puzzles that open with a forced row/column hidden pair before you can place a single digit — dealt from a pre-generated bank (`npm run beyond` regenerates it)
 - The in-progress game, stats, and settings persist in localStorage — reloads resume where you left off

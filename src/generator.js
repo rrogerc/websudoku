@@ -7,19 +7,38 @@
 //   websudoku Easy    34-36 givens  naked singles only              (qqwing Simple)
 //   websudoku Medium  28-32 givens  singles + a few hidden singles  (Simple/Easy)
 //   clone Hard        26-28 givens  60% hidden-single heavy, 40% need pairs (2-6 steps)
-//   clone Evil        24-26 givens  pair-technique heavy (avg ~5 steps), never guessing
+//   clone Evil        23-26 givens  NYT-style: minimal, tight opening, >=3 pair steps
 //
-// Hard and Evil deliberately sit a notch ABOVE the live site: live Hard is
-// ~1/3 pair-puzzles averaging 0.8 pair steps (clone: 40% / ~1.3), live Evil
-// averages 3.9 pair steps (clone: ~5). Hard's singles/pairs split is decided
-// per puzzle number by the seeded rng. Both stay in qqwing Intermediate at
-// most - Expert (guessing required) is never used.
+// Hard deliberately sits a notch ABOVE the live site: live Hard is ~1/3
+// pair-puzzles averaging 0.8 pair steps (clone: 40% / ~1.3). Hard's
+// singles/pairs split is decided per puzzle number by the seeded rng.
+// Everything stays in qqwing Intermediate at most - Expert (guessing
+// required) is never used.
+//
+// Evil was rebuilt July 2026 to match the structure of NYT Hard (measured on
+// 1,155 archived NYT puzzles) rather than live websudoku Evil — THAT RE-TUNE
+// RENUMBERED EVIL. The NYT signature, minus their occasional beyond-pairs
+// techniques (kept out to preserve the no-guessing ceiling):
+//   - MINIMAL grids: no removable given, every clue load-bearing. Falls out
+//     of Symmetry.NONE for free — qqwing tests each cell individually while
+//     digging, and a cell that failed removal earlier (more givens) can only
+//     fail harder later. Symmetric digging removes PAIRS, which is exactly
+//     what left ~2-3 redundant givens per old Evil (NYT: 0.00 across all
+//     1,155; measured websudoku Evil: ~3).
+//   - Asymmetric, 23-26 givens (NYT mean 23.9; symmetric Evil sat at 25-26).
+//   - Tight opening: <=4 cells findable via naked/hidden single on the raw
+//     grid (NYT mean 3.6 vs old Evil 5.5) — the "hunt from move one" feel,
+//     and it steepens the endgame cascade (path width roughly doubles by the
+//     last third, NYT's arc).
+//   - Pair steps >=3 with no upper cap: floor keeps the dud rate at zero
+//     (live websudoku deals 1-pair-step "Evils" 30% of the time), the open
+//     tail (up to 10+) gives NYT's you-don't-know-what-today-brings spread.
 //
 // Every observed websudoku puzzle was 180°-rotationally symmetric with a
-// unique solution, so generation uses ROTATE180 (qqwing guarantees the unique
-// solution). qqwing naturally emits 24-31 givens, so Easy pads the grid back
-// up with symmetric pairs of solution digits — adding givens can only remove
-// required techniques, never add them.
+// unique solution, so Easy/Medium/Hard generate with ROTATE180 (qqwing
+// guarantees the unique solution either way). qqwing naturally emits 24-31
+// givens, so Easy pads the grid back up with symmetric pairs of solution
+// digits — adding givens can only remove required techniques, never add them.
 //
 // Reproducibility: qqwing's sole entropy source is Math.random (no Date, no
 // sort), so running the whole generate-and-grade loop under a seeded PRNG
@@ -58,6 +77,55 @@ function seedFor(level, number) {
 
 const parseGrid = (s) => [...s.replace(/[^1-9.]/g, '')].map((ch) => (ch === '.' ? 0 : +ch))
 
+// The 27 houses (9 rows, 9 columns, 9 boxes) as cell-index arrays
+const HOUSES = []
+for (let r = 0; r < 9; r++) HOUSES.push(Array.from({ length: 9 }, (_, c) => r * 9 + c))
+for (let c = 0; c < 9; c++) HOUSES.push(Array.from({ length: 9 }, (_, r) => r * 9 + c))
+for (let b = 0; b < 9; b++) {
+  const cells = []
+  for (let d = 0; d < 9; d++) cells.push((Math.floor(b / 3) * 3 + Math.floor(d / 3)) * 9 + (b % 3) * 3 + (d % 3))
+  HOUSES.push(cells)
+}
+const popcount = (m) => {
+  let c = 0
+  while (m) {
+    m &= m - 1
+    c++
+  }
+  return c
+}
+
+// Opening width: how many cells are solvable on the untouched grid via a
+// naked or hidden single. Evil requires <=4 (NYT-style tight opening); pure
+// function of the grid, so it costs no draws from the seeded rng.
+function openingWidth(b) {
+  const rowM = Array(9).fill(0)
+  const colM = Array(9).fill(0)
+  const boxM = Array(9).fill(0)
+  for (let i = 0; i < 81; i++)
+    if (b[i]) {
+      const m = 1 << (b[i] - 1)
+      rowM[Math.floor(i / 9)] |= m
+      colM[i % 9] |= m
+      boxM[Math.floor(i / 27) * 3 + Math.floor((i % 9) / 3)] |= m
+    }
+  const cands = Array.from({ length: 81 }, (_, i) =>
+    b[i] ? 0 : 0x1ff & ~(rowM[Math.floor(i / 9)] | colM[i % 9] | boxM[Math.floor(i / 27) * 3 + Math.floor((i % 9) / 3)])
+  )
+  const found = new Set()
+  for (let i = 0; i < 81; i++) if (!b[i] && popcount(cands[i]) === 1) found.add(i)
+  for (const house of HOUSES) {
+    for (let d = 1; d <= 9; d++) {
+      const m = 1 << (d - 1)
+      let spot = -1
+      let n = 0
+      for (const i of house) if (!b[i] && cands[i] & m) { spot = i; n++ }
+      if (n === 1) found.add(spot)
+    }
+  }
+  return found.size
+}
+
 // websudoku Easy sits at 34-36 givens but qqwing stops removing around 28-29,
 // so fill symmetric pairs (centre last, for parity) back in from the solution
 function padGivens(givens, solution, target) {
@@ -77,7 +145,9 @@ function tryGenerate(level, wantPairs) {
   const qq = new qqwing()
   qq.setRecordHistory(true)
   qq.setPrintStyle(qqwing.PrintStyle.ONE_LINE)
-  qq.generatePuzzleSymmetry(qqwing.Symmetry.ROTATE180)
+  // Evil digs without symmetry: individual-cell removal is what makes every
+  // grid minimal (symmetric pair-removal strands redundant givens)
+  qq.generatePuzzleSymmetry(level === 'expert' ? qqwing.Symmetry.NONE : qqwing.Symmetry.ROTATE180)
   const givens = parseGrid(qq.getPuzzleString())
   qq.solve()
   const solution = parseGrid(qq.getSolutionString())
@@ -100,8 +170,15 @@ function tryGenerate(level, wantPairs) {
       (wantPairs
         ? tier === qqwing.Difficulty.INTERMEDIATE && pairs >= 2 && pairs <= 6
         : tier === qqwing.Difficulty.EASY && hiddenSingles >= 6)
-  // expert = websudoku Evil; >=3 pair steps matches the live site's average
-  else ok = tier === qqwing.Difficulty.INTERMEDIATE && clues >= 24 && clues <= 26 && pairs >= 3
+  // expert = Evil, NYT-style (see header): minimal comes free from
+  // Symmetry.NONE, so the acceptance only has to gate difficulty, clue count
+  // and the tight opening. openingWidth last — it's the only non-free check.
+  else
+    ok =
+      tier === qqwing.Difficulty.INTERMEDIATE &&
+      clues <= 26 &&
+      pairs >= 3 &&
+      openingWidth(givens) <= 4
 
   if (!ok) return null
   if (level === 'easy') padGivens(givens, solution, 35)
