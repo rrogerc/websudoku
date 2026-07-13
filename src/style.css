@@ -469,6 +469,14 @@ html.board-only #buttons-p {display:none;}
 
     /* keypad is a bottom bar here, not a right column — corner is free again */
     html:not(.no-keypad) #focus-exit {right:max(12px, env(safe-area-inset-right, 0px));}
+
+    /* menu: keep the Options link clear of the iPhone home-indicator gesture zone.
+       Auto margins center like justify-content:center but collapse to 0 on overflow,
+       so a too-tall menu scrolls from the top instead of overflowing both ends and
+       shoving the bottom padding off-screen */
+    #menu {overflow-y:auto; justify-content:flex-start; padding-bottom:calc(28px + env(safe-area-inset-bottom, 0px));}
+    #menu > :first-child {margin-top:auto;}
+    #menu > :last-child {margin-bottom:auto;}
 }
 
 /* thumb pad clearance, only where the pad actually shows (touch + phone portrait) */
