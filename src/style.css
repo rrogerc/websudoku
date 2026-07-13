@@ -357,7 +357,11 @@ html.board-only #buttons-p {display:none;}
 
 #thumbpad {--tp:min(46vw, 200px); position:fixed; right:max(10px, env(safe-area-inset-right, 0px)); bottom:max(10px, env(safe-area-inset-bottom, 0px)); z-index:1; width:var(--tp); display:none;
            touch-action:none; -webkit-touch-callout:none; user-select:none; -webkit-user-select:none;}
-html.thumbpad:not(.menu) #thumbpad {display:block;}
+/* only real touch devices show it — a desktop that has the setting stored
+   (settings synced or picked once) keeps its clean layout */
+@media (pointer: coarse) {
+  html.thumbpad:not(.menu) #thumbpad {display:block;}
+}
 
 /* mini-map: live miniature of the board; drag on it to aim (the real board's
    cell tracks the finger), lift to select */
@@ -440,9 +444,6 @@ html.thumbpad:not(.menu) #thumbpad {display:block;}
     /* bottom padding = keypad clearance so the fixed bar never covers the info line */
     #right-column {padding: max(8px, env(safe-area-inset-top, 0px)) 4px calc(126px + env(safe-area-inset-bottom, 0px));}
     html.no-keypad #right-column {padding-bottom:16px;}
-    /* thumb pad clearance instead (map footprint; the taller digit pad may
-       briefly overlap the buttons row while open — it always swaps right back) */
-    html.thumbpad #right-column {padding-bottom:calc(224px + env(safe-area-inset-bottom, 0px));}
 
     .c0,.c1,.c2,.c3,.e0,.e1,.e2,.e3,.f0,.f1,.f2,.f3,.g0,.g1,.g2,.g3,.h0,.h1,.h2,.h3,.i0,.i1,.i2,.i3 {width:var(--cell); height:var(--cell);} /* cells */
     .s0,.s1,.s2,.s3 {font-size:calc(var(--cell) * 0.73);} /* givens — ratios match the desktop breakpoints */
@@ -466,6 +467,16 @@ html.thumbpad:not(.menu) #thumbpad {display:block;}
 
     /* keypad is a bottom bar here, not a right column — corner is free again */
     html:not(.no-keypad) #focus-exit {right:max(12px, env(safe-area-inset-right, 0px));}
+}
+
+/* thumb pad clearance, only where the pad actually shows (touch + phone portrait):
+   the taller digit pad may briefly overlap the buttons row while open — it always
+   swaps right back */
+@media (max-width: 480px) and (pointer: coarse) {
+    html.thumbpad #right-column {padding-bottom:calc(224px + env(safe-area-inset-bottom, 0px));}
+    /* board-only: no clearance, so the board centers true in the viewport; a
+       centered full-width board still clears the map on modern phone heights */
+    html.board-only.thumbpad #right-column {padding-bottom:max(8px, env(safe-area-inset-bottom, 0px));}
 }
 
 @media (pointer: coarse) {
