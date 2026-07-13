@@ -387,12 +387,14 @@ html.board-only #buttons-p {display:none;}
 #thumbpad.pad #tp-map {display:none;}
 #thumbpad:not(.pad) #tp-pad {display:none;}
 #tp-digits {display:grid; grid-template-columns:repeat(3, 1fr); gap:6px;}
-.tp-key {position:relative; box-sizing:border-box; display:flex; align-items:center; justify-content:center; height:calc((var(--tp) - 12px) / 3); background-color:var(--board-bg); border:1px solid var(--cell-border); font-size:calc(var(--tp) * 0.13); cursor:pointer;}
+/* four equal rows (3 digit rows + actions) fit the pad in the map's exact
+   footprint, so swapping panels never changes the widget's height */
+.tp-key {position:relative; box-sizing:border-box; display:flex; align-items:center; justify-content:center; height:calc((var(--tp) - 18px) / 4); background-color:var(--board-bg); border:1px solid var(--cell-border); font-size:calc(var(--tp) * 0.12); cursor:pointer;}
 .tp-key:active {background-color:var(--selected);}
 .tp-key.active {background-color:var(--selected); font-weight:bold;} /* the cell's current entry */
 .tp-key.marked::after {content:""; position:absolute; right:12%; bottom:10%; width:6px; height:6px; border-radius:50%; background-color:var(--pencil);} /* dot = penciled */
 #tp-actions {display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:6px;}
-#tp-actions .tp-key {height:calc(var(--tp) * 0.2); font-size:calc(var(--tp) * 0.1);}
+#tp-actions .tp-key {font-size:calc(var(--tp) * 0.1);}
 
 /* --- controls, options --- */
 
@@ -469,14 +471,12 @@ html.board-only #buttons-p {display:none;}
     html:not(.no-keypad) #focus-exit {right:max(12px, env(safe-area-inset-right, 0px));}
 }
 
-/* thumb pad clearance, only where the pad actually shows (touch + phone portrait):
-   the taller digit pad may briefly overlap the buttons row while open — it always
-   swaps right back */
+/* thumb pad clearance, only where the pad actually shows (touch + phone portrait) */
 @media (max-width: 480px) and (pointer: coarse) {
     html.thumbpad #right-column {padding-bottom:calc(224px + env(safe-area-inset-bottom, 0px));}
-    /* board-only: no clearance, so the board centers true in the viewport; a
-       centered full-width board still clears the map on modern phone heights */
-    html.board-only.thumbpad #right-column {padding-bottom:max(8px, env(safe-area-inset-bottom, 0px));}
+    /* board-only: just enough bottom padding to float the board a small gap
+       (~half of it) above the widget, instead of sharing its edge */
+    html.board-only.thumbpad #right-column {padding-bottom:calc(36px + env(safe-area-inset-bottom, 0px));}
 }
 
 @media (pointer: coarse) {
