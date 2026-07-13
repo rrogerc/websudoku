@@ -26,6 +26,10 @@ function ensure() {
   if (!ctx) {
     const AC = window.AudioContext || window.webkitAudioContext
     if (!AC) return null
+    // iOS files Web Audio under the "ambient" category, which the hardware
+    // silent switch mutes outright; 'playback' ignores the switch (Safari 17+.
+    // Cost, accepted: activating the session pauses background music.)
+    if (navigator.audioSession) navigator.audioSession.type = 'playback'
     ctx = new AC()
     master = ctx.createGain()
     master.gain.value = 0.25 // keep the whole thing quiet and tasteful
@@ -44,7 +48,9 @@ function ensure() {
       data[k] = (s / 4294967296) * 2 - 1
     }
   }
-  if (ctx.state === 'suspended') ctx.resume()
+  // not just 'suspended': backgrounding the iOS PWA parks the context in a
+  // nonstandard 'interrupted' state, which also needs an explicit resume
+  if (ctx.state !== 'running') ctx.resume()
   return ctx
 }
 
