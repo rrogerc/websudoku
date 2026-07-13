@@ -62,6 +62,24 @@ narrow-share 0.08 vs 0.08 · cascade 2.0× vs 2.1× · pair steps 5.3 vs 4.5
 
 ## Deliberately not replicated
 
+- **Digit coverage (the "missing digit" quirk) — reviewed and kept, 2026-07-12.**
+  Every dealt Evil opens with exactly one digit absent from the givens; only 5%
+  of NYT Hards do. Cause: greedy digging almost always strips one digit bare —
+  if the other eight digits are pinned, the ninth is forced by elimination, so
+  removing its last given keeps uniqueness (and uniqueness caps absents at one:
+  two absent digits could be swapped throughout for a second solution). qqwing's
+  digger has no coverage guard: 0/197 in-band deals kept all nine digits, so
+  rejection can't fix it, and adding a given back is redundant by definition
+  (breaks minimality). A custom coverage-aware digger was prototyped (dig
+  cell-by-cell, skip a digit's last given, re-verify the protected givens'
+  minimality at the end, ~2% reject) and measured STRICTLY BETTER: 1-in-30
+  acceptance @ 1.7ms/attempt (~0.2s phone deals, 10× faster), clues 23.9 = NYT
+  exactly, hidden singles 12.8 (vs 14.9). Roger explicitly chose to keep the
+  qqwing digger anyway — the quirk doesn't touch difficulty (single-type mix,
+  pencil load, unlock multiplicity all matched NYT), it avoids owning generation
+  code, and it avoids a third renumbering. If this ever gets revisited, the
+  swap renumbers Evil; prototype algorithm is fully described above.
+
 - **Beyond-pairs techniques** (NYT's ~7% XY-wing/chain days). Kept out so Evil
   never exceeds the pairs ceiling — Roger wants a separate, future harder
   level for that instead. Useful fact for that future level: asymmetric
