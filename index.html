@@ -6,6 +6,12 @@
   <!-- user-scalable=no is honored in the installed (standalone) PWA, killing pinch-zoom;
        viewport-fit=cover makes env(safe-area-inset-*) resolve on notched iPhones -->
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <!-- black-translucent: the standalone PWA's viewport reaches the physical top
+       of the screen (under the Dynamic Island), so the ambient video can too;
+       costs white status-bar glyphs on every theme. Layout compensates with
+       safe-area-inset-top. Changes here may need the PWA re-added to take. -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="description" content="Play unlimited Sudoku puzzles. Four levels from Easy to Evil.">
   <meta name="theme-color" content="#666699">
   <link rel="icon" type="image/png" href="/icon-192.png">
