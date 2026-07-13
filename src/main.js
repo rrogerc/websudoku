@@ -1098,6 +1098,33 @@ document.addEventListener('keydown', (e) => {
   e.preventDefault()
   setBoardOnly(!settings.boardOnly)
 })
+// touch: double-tapping empty background toggles board-only, the mobile analog
+// of the F key (which needs a keyboard). Interactive surfaces are excluded so
+// game taps never trigger it; a tap on one also resets the pending first tap.
+let lastTap = 0
+let lastTapX = 0
+let lastTapY = 0
+document.addEventListener('pointerup', (e) => {
+  if (e.pointerType !== 'touch' || !e.isPrimary) return
+  if (menuShown() || optionsShown() || $('overlay').classList.contains('shown')) return
+  const t = e.target
+  if (
+    t instanceof Element &&
+    t.closest('#puzzle_grid, #side_keys, #thumbpad, #focus-exit, a, input, select, label')
+  ) {
+    lastTap = 0
+    return
+  }
+  const now = performance.now()
+  if (now - lastTap < 350 && Math.hypot(e.clientX - lastTapX, e.clientY - lastTapY) < 48) {
+    lastTap = 0
+    setBoardOnly(!settings.boardOnly)
+  } else {
+    lastTap = now
+    lastTapX = e.clientX
+    lastTapY = e.clientY
+  }
+})
 document.body.addEventListener('click', (e) => {
   const level = e.target.closest('a[data-level]')?.dataset.level
   if (level) {
