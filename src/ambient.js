@@ -306,11 +306,13 @@ function ytCommand(func) {
 // Accepts a full YouTube URL (watch/youtu.be/live/shorts/embed) or a bare
 // 11-char id; returns the id, or '' when it can't find one.
 export function parseYouTubeId(text) {
-  text = text.trim()
+  // phone clipboards smuggle in zero-width characters; trim() misses them
+  text = text.replace(/[\u200B-\u200D\u2060\uFEFF]/g, '').trim()
   if (!text) return ''
   if (/^[\w-]{11}$/.test(text)) return text
   try {
-    const u = new URL(text)
+    // links typed on a phone usually lack the scheme, which URL() demands
+    const u = new URL(/^[a-z][\w+.-]*:/i.test(text) ? text : 'https://' + text)
     const idOk = (s) => (/^[\w-]{11}$/.test(s) ? s : '')
     if (u.hostname.endsWith('youtu.be')) return idOk(u.pathname.slice(1).split('/')[0])
     if (u.hostname.endsWith('youtube.com') || u.hostname.endsWith('youtube-nocookie.com')) {
