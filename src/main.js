@@ -281,7 +281,7 @@ function buildGrid() {
       })
       input.addEventListener('input', () => onCellInput(i))
       td.addEventListener('click', () => {
-        input.focus()
+        input.focus({ preventScroll: true })
         // the thumb pad follows taps on the real board too: an editable cell
         // opens the digit pad, a given (nothing to enter) drops back to the map
         if (settings.touchControls === 'thumbpad') {
@@ -364,7 +364,7 @@ function buildGrid() {
       const inBounds =
         delta === -9 ? row > 0 : delta === 9 ? row < 8 : delta === -1 ? col > 0 : col < 8
       if (inBounds) {
-        inputs[i + delta].focus()
+        inputs[i + delta].focus({ preventScroll: true })
         sfx.playStep() // footstep-style tap on each move
       }
     }
@@ -387,7 +387,7 @@ function buildGrid() {
     const t = e.target
     if (t instanceof HTMLElement && (t.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName))) return
     e.preventDefault()
-    inputs[selected >= 0 ? selected : 40].focus()
+    inputs[selected >= 0 ? selected : 40].focus({ preventScroll: true })
     sfx.playStep()
   })
 }
@@ -473,7 +473,7 @@ function applyKey(key, asPencil = false) {
     return
   }
   // touch focus is fragile (overlays, iOS quirks) — the remembered cell still applies
-  if (!gridHasFocus()) inputs[selected].focus()
+  if (!gridHasFocus()) inputs[selected].focus({ preventScroll: true })
   if (key === 'del') {
     clearCell(selected)
   } else if (asPencil || (pencilMode && settings.allowPencilMarks)) {
@@ -506,7 +506,7 @@ function setPencilMode(on) {
 // the pad's own gestures decide entry vs mark (tap vs long-press)
 function thumbTarget() {
   if (game.done || selected < 0 || game.givens[selected] !== 0) return false
-  if (!gridHasFocus()) inputs[selected].focus()
+  if (!gridHasFocus()) inputs[selected].focus({ preventScroll: true })
   return true
 }
 
@@ -514,6 +514,9 @@ function setBoardOnly(on) {
   settings.boardOnly = on
   writeStore('websudoku:settings', settings)
   applySettings()
+  // entering with a stale scroll offset would freeze the page shifted up
+  // (overflow:hidden keeps the offset), leaving a page-bg bar at the bottom
+  if (on) window.scrollTo(0, 0)
 }
 
 /* ---------- menu / game states ---------- */
@@ -1057,7 +1060,7 @@ thumb.init({
     // focus box on the still-selected cell would read as a second one
     $('puzzle_grid').classList.toggle('aiming', on)
   },
-  select: (i) => inputs[i].focus(),
+  select: (i) => inputs[i].focus({ preventScroll: true }),
   digit: (d) => {
     if (thumbTarget()) setEntry(selected, game.entries[selected] === d ? '' : d)
   },
@@ -1112,6 +1115,14 @@ document.addEventListener('keydown', (e) => {
   if (t instanceof HTMLElement && (t.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName))) return
   e.preventDefault()
   setBoardOnly(!settings.boardOnly)
+})
+// iOS pans the layout viewport to "reveal" a focused input even when overflow
+// is hidden, and never pans back — in board-only that reads as the whole game
+// (fixed ambient layer included) drifting up, leaving a page-bg bar at the
+// bottom. preventScroll on our focus() calls avoids most of it; this snaps
+// back whatever iOS still sneaks in.
+window.addEventListener('scroll', () => {
+  if (settings.boardOnly && !menuShown() && (window.scrollX || window.scrollY)) window.scrollTo(0, 0)
 })
 // thumb pad: a touch anywhere off the board and the pad itself always exits
 // number entry, back to the map. (Board taps are decided in the cell click
