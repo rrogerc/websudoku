@@ -275,10 +275,20 @@ function buildGrid() {
       input.addEventListener('focus', () => {
         selected = i
         thumb.setSelected(i) // the thumb pad's mini-map mirrors the selection
-        input.select()
+        // iOS paints select() as a blue text-selection highlight on the digit;
+        // touch never needs it (entry comes from the pads, not the keyboard)
+        if (!matchMedia('(pointer: coarse)').matches) input.select()
       })
       input.addEventListener('input', () => onCellInput(i))
-      td.addEventListener('click', () => input.focus())
+      td.addEventListener('click', () => {
+        input.focus()
+        // the thumb pad follows taps on the real board too: an editable cell
+        // opens the digit pad, a given (nothing to enter) drops back to the map
+        if (settings.touchControls === 'thumbpad') {
+          if (!game.done && game.givens[i] === 0) thumb.showPad()
+          else thumb.showMap()
+        }
+      })
       td.appendChild(input)
       const pm = document.createElement('div')
       pm.className = 'pm'
@@ -1041,7 +1051,12 @@ thumb.init({
     marks: game.marks[i] || '',
     err: game.err[i] || 0,
   }),
-  aimBoard: (i, on) => tds[i].classList.toggle('aim', on),
+  aimBoard: (i, on) => {
+    tds[i].classList.toggle('aim', on)
+    // while aiming, the aim box is the only cursor on the real board — the
+    // focus box on the still-selected cell would read as a second one
+    $('puzzle_grid').classList.toggle('aiming', on)
+  },
   select: (i) => inputs[i].focus(),
   digit: (d) => {
     if (thumbTarget()) setEntry(selected, game.entries[selected] === d ? '' : d)
@@ -1097,6 +1112,16 @@ document.addEventListener('keydown', (e) => {
   if (t instanceof HTMLElement && (t.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName))) return
   e.preventDefault()
   setBoardOnly(!settings.boardOnly)
+})
+// thumb pad: a touch anywhere off the board and the pad itself always exits
+// number entry, back to the map. (Board taps are decided in the cell click
+// handler above: an editable cell opens the pad, a given closes it.)
+document.addEventListener('pointerup', (e) => {
+  if (e.pointerType !== 'touch' || !e.isPrimary) return
+  if (settings.touchControls !== 'thumbpad') return
+  const t = e.target
+  if (t instanceof Element && (t.closest('#thumbpad') || t.closest('#puzzle_grid'))) return
+  thumb.showMap()
 })
 // touch: double-tapping empty background toggles board-only, the mobile analog
 // of the F key (which needs a keyboard). Interactive surfaces are excluded so

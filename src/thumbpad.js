@@ -75,7 +75,7 @@ function setAim(i) {
   }
 }
 
-const showPad = () => root.classList.add('pad')
+export const showPad = () => root.classList.add('pad')
 export const showMap = () => root.classList.remove('pad')
 
 // fresh deal: forget the old selection and land on the map panel
