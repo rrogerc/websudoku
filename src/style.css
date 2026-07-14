@@ -251,7 +251,11 @@ body, a, label, input, select, .tk, .t td {touch-action:manipulation;}
 
 /* --- ambient background (game only; the menu keeps the plain page) --- */
 
-#ambient {position:fixed; inset:0; z-index:-1; display:none; pointer-events:none;}
+/* sized with vh/vw, not inset:0: with iOS Safari Page Zoom active, the
+   standalone layout viewport ends ~a status bar short of the physical screen
+   bottom and inset:0 stops there with it — vh resolves against the full
+   screen, so the scene always reaches the bottom edge */
+#ambient {position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:-1; display:none; pointer-events:none;}
 html.ambient:not(.menu) #ambient {display:block;}
 #ambient canvas, #ambient video {display:block; width:100%; height:100%; object-fit:cover;}
 /* YouTube embed: 16:9 cover sizing, oversized ~30% so the title bar and

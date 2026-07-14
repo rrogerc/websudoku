@@ -1202,41 +1202,6 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden) saveGame()
 })
 
-/* TEMP DEBUG — board-only viewport diagnostics; remove once the iOS
-   bottom-bar bug is understood. Green readout, top-left, board-only only. */
-{
-  const dbg = document.createElement('div')
-  dbg.style.cssText =
-    'position:fixed;left:8px;top:100px;z-index:99;background:rgba(0,0,0,0.75);color:#0f0;font:11px/1.5 monospace;padding:6px 8px;white-space:pre;pointer-events:none;display:none;'
-  document.body.appendChild(dbg)
-  const probe = document.createElement('div')
-  probe.style.cssText =
-    'position:fixed;visibility:hidden;pointer-events:none;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);'
-  document.body.appendChild(probe)
-  setInterval(() => {
-    if (!settings.boardOnly || menuShown()) {
-      dbg.style.display = 'none'
-      return
-    }
-    const vv = window.visualViewport
-    const amb = $('ambient').getBoundingClientRect()
-    const kid = document.querySelector('#ambient video, #ambient iframe, #ambient canvas')
-    const kr = kid ? kid.getBoundingClientRect() : null
-    const cs = getComputedStyle(probe)
-    dbg.style.display = 'block'
-    dbg.textContent =
-      `inner   ${window.innerWidth}x${window.innerHeight}\n` +
-      `screen  ${screen.width}x${screen.height}\n` +
-      `vv      ${vv ? `${vv.width.toFixed(0)}x${vv.height.toFixed(0)} off ${vv.offsetTop.toFixed(1)},${vv.offsetLeft.toFixed(1)} pg ${vv.pageTop.toFixed(1)} sc ${vv.scale.toFixed(2)}` : 'n/a'}\n` +
-      `scroll  win ${window.scrollY} body ${document.body.scrollTop} doc ${document.documentElement.scrollTop}\n` +
-      `ambient top ${amb.top.toFixed(1)} bot ${amb.bottom.toFixed(1)} h ${amb.height.toFixed(1)}\n` +
-      `layer   ${kid ? `${kid.tagName.toLowerCase()} top ${kr.top.toFixed(1)} bot ${kr.bottom.toFixed(1)} h ${kr.height.toFixed(1)}` : 'none'}\n` +
-      `body h  ${document.body.getBoundingClientRect().height.toFixed(1)}  html h ${document.documentElement.getBoundingClientRect().height.toFixed(1)}\n` +
-      `inset   top ${cs.paddingTop} bot ${cs.paddingBottom}\n` +
-      `standalone ${matchMedia('(display-mode: standalone)').matches}`
-  }, 500)
-}
-
 // Boot lands on the menu. An unfinished save restores silently behind its
 // Continue row; a finished (or absent) save just leaves the menu bare — the
 // first deal happens on a level click. Stats from a done game were already
