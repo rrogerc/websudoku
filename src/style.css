@@ -338,6 +338,10 @@ html.board-only #focus-exit {display:block;}
 /* overflow lock: with the chrome hidden everything fits the viewport, so nothing scrolls
    or rubber-bands (overscroll-behavior needs iOS 16+) */
 html.board-only, html.board-only body {overflow:hidden; overscroll-behavior:none;}
+/* fixed body: iOS focus-reveal scrolls even overflow:hidden boxes (body
+   included) to show a tapped input and never scrolls back, dragging the fixed
+   ambient layer up with it — a fixed body has nothing to displace */
+html.board-only body {position:fixed; inset:0; width:100%;}
 html.board-only .thin-row,
 html.board-only #message-p,
 html.board-only #info-p,

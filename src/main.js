@@ -516,7 +516,10 @@ function setBoardOnly(on) {
   applySettings()
   // entering with a stale scroll offset would freeze the page shifted up
   // (overflow:hidden keeps the offset), leaving a page-bg bar at the bottom
-  if (on) window.scrollTo(0, 0)
+  if (on) {
+    window.scrollTo(0, 0)
+    document.body.scrollTop = 0 // iOS focus-reveal scrolls body separately
+  }
 }
 
 /* ---------- menu / game states ---------- */
@@ -1116,14 +1119,24 @@ document.addEventListener('keydown', (e) => {
   e.preventDefault()
   setBoardOnly(!settings.boardOnly)
 })
-// iOS pans the layout viewport to "reveal" a focused input even when overflow
-// is hidden, and never pans back — in board-only that reads as the whole game
-// (fixed ambient layer included) drifting up, leaving a page-bg bar at the
-// bottom. preventScroll on our focus() calls avoids most of it; this snaps
-// back whatever iOS still sneaks in.
-window.addEventListener('scroll', () => {
-  if (settings.boardOnly && !menuShown() && (window.scrollX || window.scrollY)) window.scrollTo(0, 0)
-})
+// iOS pans to "reveal" a focused input even inside overflow:hidden boxes —
+// including the body element itself, which window.scrollTo never resets and
+// whose scroll events don't bubble — and never pans back. In board-only that
+// reads as the whole game (fixed ambient layer included) drifting up, leaving
+// a page-bg bar at the bottom. The fixed body in CSS prevents most of it;
+// this capture-phase clamp snaps back anything iOS still displaces.
+document.addEventListener(
+  'scroll',
+  (e) => {
+    if (!settings.boardOnly || menuShown()) return
+    const el = e.target === document ? document.scrollingElement : e.target
+    if (el instanceof Element && (el.scrollTop || el.scrollLeft)) {
+      el.scrollTop = 0
+      el.scrollLeft = 0
+    }
+  },
+  { capture: true, passive: true }
+)
 // thumb pad: a touch anywhere off the board and the pad itself always exits
 // number entry, back to the map. (Board taps are decided in the cell click
 // handler above: an editable cell opens the pad, a given closes it.)
