@@ -1062,6 +1062,9 @@ thumb.init({
     // while aiming, the aim box is the only cursor on the real board — the
     // focus box on the still-selected cell would read as a second one
     $('puzzle_grid').classList.toggle('aiming', on)
+    // same footstep as keyboard movement; setAim dedupes same-cell moves,
+    // so this fires once per cell crossed while sliding
+    if (on) sfx.playStep()
   },
   select: (i) => inputs[i].focus({ preventScroll: true }),
   digit: (d) => {
