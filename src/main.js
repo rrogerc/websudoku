@@ -1202,45 +1202,6 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden) saveGame()
 })
 
-/* TEMP DEBUG v2 — viewport geometry readout + edge markers; shows in the game
-   view (normal AND board-only) so the two states can be compared. Red strip =
-   the fixed viewport's bottom edge; blue strip = where 100vh lands. Remove
-   once the iOS bottom-bar bug is dead. */
-{
-  const dbg = document.createElement('div')
-  dbg.style.cssText =
-    'position:fixed;left:4px;top:90px;z-index:99;background:rgba(0,0,0,.8);color:#0f0;font:9px/1.4 monospace;padding:4px 6px;white-space:pre;pointer-events:none;display:none;max-width:96vw;'
-  const red = document.createElement('div')
-  red.style.cssText =
-    'position:fixed;left:0;right:0;bottom:0;height:14px;z-index:98;background:#f00;opacity:.7;pointer-events:none;display:none;'
-  const blue = document.createElement('div')
-  blue.style.cssText =
-    'position:fixed;left:0;right:0;top:calc(100vh - 14px);height:14px;z-index:97;background:#00f;opacity:.7;pointer-events:none;display:none;'
-  const vhProbe = document.createElement('div')
-  vhProbe.style.cssText =
-    'position:fixed;visibility:hidden;height:100vh;width:100vw;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);pointer-events:none;'
-  document.body.append(dbg, red, blue, vhProbe)
-  setInterval(() => {
-    const show = !menuShown()
-    for (const el of [dbg, red, blue]) el.style.display = show ? 'block' : 'none'
-    if (!show) return
-    const vv = window.visualViewport
-    const amb = $('ambient').getBoundingClientRect()
-    const kid = document.querySelector('#ambient video, #ambient iframe, #ambient canvas')
-    const kr = kid ? kid.getBoundingClientRect() : null
-    const cs = getComputedStyle(vhProbe)
-    dbg.textContent =
-      `in  ${window.innerWidth}x${window.innerHeight}  out ${window.outerWidth}x${window.outerHeight}\n` +
-      `scr ${screen.width}x${screen.height}  dpr ${window.devicePixelRatio}\n` +
-      `icb ${document.documentElement.clientWidth}x${document.documentElement.clientHeight}\n` +
-      `vv  ${vv ? `${vv.width.toFixed(0)}x${vv.height.toFixed(0)} sc ${vv.scale.toFixed(3)} off ${vv.offsetTop.toFixed(0)} pg ${vv.pageTop.toFixed(0)}` : 'n/a'}\n` +
-      `vh100 ${cs.height}  vw100 ${cs.width}\n` +
-      `amb ${amb.top.toFixed(0)}..${amb.bottom.toFixed(0)} (h ${amb.height.toFixed(0)})\n` +
-      `lyr ${kid ? `${kid.tagName.toLowerCase()} ${kr.top.toFixed(0)}..${kr.bottom.toFixed(0)}` : 'none'}\n` +
-      `ins t ${cs.paddingTop} b ${cs.paddingBottom}  bo ${settings.boardOnly ? 1 : 0}`
-  }, 500)
-}
-
 // Boot lands on the menu. An unfinished save restores silently behind its
 // Continue row; a finished (or absent) save just leaves the menu bare — the
 // first deal happens on a level click. Stats from a done game were already
